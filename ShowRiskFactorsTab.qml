@@ -38,6 +38,7 @@ Item {
             heartDiseaseLabel.visible = info.heartDisease;
             kidneyDiseaseLabel.visible = info.kidneyDisease;
             gastritisLabel.visible = info.gastritis;
+            ulcerLabel.visible = info.ulcer
             aorticAneurysmLabel.visible = info.aorticAneurysm;
             immunosuppressionLabel.visible = info.immunosuppression;
             coagulopathyLabel.visible = info.coagulopathy
@@ -58,6 +59,7 @@ Item {
             heartDiseaseLabel.visible = false;
             kidneyDiseaseLabel.visible = false;
             gastritisLabel.visible = false;
+            ulcerLabel.visible = false;
             aorticAneurysmLabel.visible = false;
             immunosuppressionLabel.visible = false;
             coagulopathyLabel.visible = false;
@@ -97,7 +99,6 @@ Item {
         color: Properties.buttonColor;
         hoverColor: Properties.buttonHoverColor;
         font.pixelSize: Properties.buttonFontPixelSize;
-        rectangle.radius: height / 2
         visible: root.editIsAvailable
         onClicked: programRoot.openRiskFactorsPage(cardId, riskFactorsArePresent);
     }
@@ -159,17 +160,7 @@ Item {
                         titleLabel.text: "Стаж курения в годах"
                     }
 
-                    /*diabetesICheckBox.checked = oldInfo.diabetesI;
-        diabetesIICheckBox.checked = oldInfo.diabetesII;
-        hoblCheckBox.checked = oldInfo.hobl;
-        hypertensionCheckBox.checked = oldInfo.hypertension;
-        heartDiseaseCheckBox.checked = oldInfo.heartDisease;
-        kidneyDiseaseCheckBox.checked = oldInfo.kidneyDisease;
-        gastritisCheckBox.checked = oldInfo.gastritis;
-        aorticAneurysmCheckBox.checked = oldInfo.aorticAneurysm;
-        immunosuppressionCheckBox.checked = oldInfo.immunosuppression;
-        coagulopathyCheckBox.checked = oldInfo.coagulopathy;
-        plateletAggregationInhibitorsCheckBox.checked = oldInfo.plateletAggregationInhibitors;*/
+
 
                     Label{
                         id: diabetesILabel
@@ -215,7 +206,14 @@ Item {
 
                     Label{
                         id: gastritisLabel
-                        text: "Гастрит / пептическая язва"
+                        text: "Гастрит"
+                        color: "navy"
+                        font.pixelSize: 18
+                    }
+
+                    Label{
+                        id: ulcerLabel
+                        text: "Пептическая язва"
                         color: "navy"
                         font.pixelSize: 18
                     }

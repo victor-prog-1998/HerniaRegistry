@@ -19,16 +19,16 @@
 DBWorker::DBWorker(QObject *parent): QObject(parent)
 {
 //---------------------------   For SQLite  -----------------------------------
-//    m_db = QSqlDatabase::addDatabase("QSQLITE");
-//    m_db.setDatabaseName("hernia_db_qml");
+    m_db = QSqlDatabase::addDatabase("QSQLITE");
+    m_db.setDatabaseName("hernia_db_qml");
 //-----------------------------------------------------------------------------
 
 //---------------------------   For MySQL   -----------------------------------
-    m_db = QSqlDatabase::addDatabase("QMYSQL");
-    m_db.setHostName("localhost");
-    m_db.setDatabaseName("hernia_db_qml");
-    m_db.setUserName("root");
-    m_db.setPassword("1111");
+//    m_db = QSqlDatabase::addDatabase("QMYSQL");
+//    m_db.setHostName("localhost");
+//    m_db.setDatabaseName("hernia_db_qml");
+//    m_db.setUserName("root");
+//    m_db.setPassword("1111");
 //-----------------------------------------------------------------------------
 
 
@@ -53,7 +53,6 @@ DBWorker::~DBWorker()
 
 }
 
-QHash<int,int> d;
 QSqlDatabase &DBWorker::database()
 {
     return this->m_db;
@@ -198,6 +197,7 @@ void DBWorker::createTables()
                    "heart_disease BOOLEAN, "
                    "kidney_disease BOOLEAN, "
                    "gastritis BOOLEAN, "
+                   "ulcer BOOLEAN, "
                    "aortic_aneurysm BOOLEAN, "
                    "immunosuppression BOOLEAN, "
                    "coagulopathy BOOLEAN, "
@@ -283,7 +283,9 @@ void DBWorker::createTables()
                    "analgesics BOOLEAN, "
                    "days_of_medication TINYINT UNSIGNED, "
                    "orally BOOLEAN, "
-                   "injections BOOLEAN"))
+                   "days_of_medication_orally TINYINT UNSIGNED, "
+                   "injections BOOLEAN, "
+                   "days_of_medication_injections TINYINT UNSIGNED"))
         qDebug() << "Таблица \"Ранняя послеоперационная боль\" создана";
     else
         qDebug() << "Ошибка при создании таблицы \"Ранняя послеоперационная боль\"";
@@ -513,6 +515,13 @@ void DBWorker::createTables()
     else
         //QMessageBox::critical(0, "", "Ошибка при создании таблицы \"Доступные карты пациентов\"");
         qDebug() << "Ошибка при создании таблицы \"Доступные карты пациентов\"";
+
+    // ------------------- Последние добавленные пользователем сетки ------------------------------------------
+    // (без первичного ключа)
+    if(createTable("LastAddedMeshes", "user_id INTEGER, mesh_id INTEGER"))
+        qDebug() << "Таблица \"Последние добавленные пользователем сетки\" создана";
+    else
+        qDebug() << "Ошибка при создании таблицы \"Последние добавленные пользователем сетки\"";
 
 
 }
@@ -747,7 +756,7 @@ QList<QObject*> DBWorker::getAllCardsModel(int userID)
 {
     QList<QObject*> modelList;
     QSqlQuery q(this->m_db);
-    q.prepare("SELECT id, fio, sex, birth_date, snils FROM PatientCards");
+    q.prepare("SELECT id, fio, sex, birth_date, snils, region_id FROM PatientCards");
     q.exec();
     qDebug() << "getAllCardsModel: userID = " << userID;
     while(q.next())
@@ -757,10 +766,11 @@ QList<QObject*> DBWorker::getAllCardsModel(int userID)
         QString sex = q.value(2).toString();
         QString birthDate = q.value(3).toString();
         QString snils = q.value(4).toString();
+        QString region = this->getRegionByID(q.value(5).toInt());
         int status = this->getUserStatus(userID);
         bool view = (status == STATUS_ADMIN) ? true : cardAvailable(userID, id);
         bool edit = (status == STATUS_ADMIN) ? true : (status == STATUS_DOCTOR) ? cardAvailable(userID, id) : false;
-        modelList.push_back(new PatientListElement(id, fio, sex, birthDate, snils, view, edit, this));
+        modelList.push_back(new PatientListElement(id, fio, sex, birthDate, snils, region, view, edit, this));
     }
     return modelList;
 }
@@ -769,7 +779,7 @@ QList<QObject *> DBWorker::getAllAvailableCardsModel(int userID)
 {
     QList<QObject*> modelList;
     QSqlQuery q(this->m_db);
-    q.prepare("SELECT id, fio, sex, birth_date, snils FROM PatientCards WHERE id IN (SELECT patient_card_id "
+    q.prepare("SELECT id, fio, sex, birth_date, snils, region_id FROM PatientCards WHERE id IN (SELECT patient_card_id "
               "FROM AvailablePatientCards"
               " WHERE user_id = ?)");
     q.addBindValue(userID);
@@ -781,11 +791,12 @@ QList<QObject *> DBWorker::getAllAvailableCardsModel(int userID)
         QString sex = q.value(2).toString();
         QString birthDate = q.value(3).toString();
         QString snils = q.value(4).toString();
+        QString region = this->getRegionByID(q.value(5).toInt());
         int status = this->getUserStatus(userID);
         // В коде окна админа этот метод не вызывается, а вызывается либо для рядового пользователя, либо для врача
         bool view = true;
         bool edit = (status == STATUS_DOCTOR);
-        modelList.push_back(new PatientListElement(id, fio, sex, birthDate, snils, view, edit, this));
+        modelList.push_back(new PatientListElement(id, fio, sex, birthDate, snils, region, view, edit, this));
     }
     return modelList;
 }
@@ -796,7 +807,7 @@ QList<QObject *> DBWorker::getCardBySnils(int userID, const QString &snils, bool
     QSqlQuery q(this->m_db);
     if(availableCarsOnly)
     {
-        q.prepare("SELECT id, fio, sex, birth_date FROM PatientCards WHERE (snils = ? AND id IN (SELECT patient_card_id "
+        q.prepare("SELECT id, fio, sex, birth_date, region_id FROM PatientCards WHERE (snils = ? AND id IN (SELECT patient_card_id "
                   "FROM AvailablePatientCards"
                   " WHERE user_id = ?))");
         q.addBindValue(snils);
@@ -808,16 +819,17 @@ QList<QObject *> DBWorker::getCardBySnils(int userID, const QString &snils, bool
             QString fio = q.value(1).toString();
             QString sex = q.value(2).toString();
             QString birthDate = q.value(3).toString();
+            QString region = this->getRegionByID(q.value(4).toInt());
             int status = this->getUserStatus(userID);
             bool view = true;
             bool edit = (status == STATUS_DOCTOR);
-            modelList.push_back(new PatientListElement(id, fio, sex, birthDate, snils, view, edit, this));
+            modelList.push_back(new PatientListElement(id, fio, sex, birthDate, snils, region, view, edit, this));
 
         }
     }
     else
     {
-        q.prepare("SELECT id, fio, sex, birth_date FROM PatientCards WHERE snils = ?");
+        q.prepare("SELECT id, fio, sex, birth_date, region_id FROM PatientCards WHERE snils = ?");
         q.addBindValue(snils);
         q.exec();
         if(q.next())
@@ -826,10 +838,11 @@ QList<QObject *> DBWorker::getCardBySnils(int userID, const QString &snils, bool
             QString fio = q.value(1).toString();
             QString sex = q.value(2).toString();
             QString birthDate = q.value(3).toString();
+            QString region = this->getRegionByID(q.value(4).toInt());
             int status = this->getUserStatus(userID);
             bool view = (status == STATUS_ADMIN) ? true : cardAvailable(userID, id);
             bool edit = (status == STATUS_ADMIN) ? true : (status == STATUS_DOCTOR) ? cardAvailable(userID, id) : false;
-            modelList.push_back(new PatientListElement(id, fio, sex, birthDate, snils, view, edit, this));
+            modelList.push_back(new PatientListElement(id, fio, sex, birthDate, snils, region, view, edit, this));
         }
     }
     return modelList;
@@ -978,7 +991,8 @@ QList<QObject *> DBWorker::getStatisticsResults(bool strict)
         tableFields["Гипертония"] = "hypertension";
         tableFields["Сердечное заболевание"] = "heart_disease";
         tableFields["Заболевание почек"] = "kidney_disease";
-        tableFields["Гастрит / пептическая язва"] = "gastritis";
+        tableFields["Гастрит"] = "gastritis";
+        tableFields["Пептическая язва"] = "ulcer";
         tableFields["Аневризмы аорты"] = "aortic_aneurysm";
         tableFields["Иммуносупрессия"] = "immunosuppression";
         tableFields["Коагулопатия"] = "coagulopathy";
@@ -1013,15 +1027,9 @@ QList<QObject *> DBWorker::getStatisticsResults(bool strict)
 
     // Добавление в список conditionsList остальных критериев поиска (грыжи итд)
 
-    // Если заданы критерии по типам грыжи: (сложность в том, что у пациента может быть несколько грыж)
-    // 1) Для каждого типа выдаем множество карт, в которых есть грыжа такого типа
+    // Если заданы критерии по грыжам (в т.ч. и по операциям): (сложность в том, что у пациента может быть несколько грыж)
+    // 1) Для каждого критерия выдаем множество карт, в которых есть грыжа с указанным критерием
     // 2) В зависимости от типа поиска находим объединение или пересечение множеств
-
-
-
-    QStringList herniaTypeConditions;
-
-
 
 
 
@@ -1030,9 +1038,7 @@ QList<QObject *> DBWorker::getStatisticsResults(bool strict)
 //    QString groinHerniaConditionTemplate = "(id IN (SELECT card_id FROM Hernias WHERE id IN (SELECT hernia_id FROM GroinHernias "
 //                                             "WHERE type_id = %1)))";
 
-
-
-
+    QStringList herniaTypeConditions;
     QStringList ventralHerniaConditions;
     QStringList groinHerniaConditions;
 
@@ -1071,7 +1077,6 @@ QList<QObject *> DBWorker::getStatisticsResults(bool strict)
         }
     }
 
-
     if(!ventralHerniaConditions.isEmpty())
     {
         QString condition;
@@ -1095,10 +1100,6 @@ QList<QObject *> DBWorker::getStatisticsResults(bool strict)
         condition = "(id IN (SELECT hernia_id FROM GroinHernias WHERE " + condition + "))";
         herniaTypeConditions.push_back(condition);
     }
-
-
-
-
 
     QStringList herniaConditions;
 
@@ -1132,7 +1133,7 @@ QList<QObject *> DBWorker::getStatisticsResults(bool strict)
     if(this->m_treeViewModel->elementIsChecked("Рецидив"))
         herniaConditions.push_back("recurrence = true");
 
-
+    // Добавление в общий список условий критериев по грыжам
 
     if(!herniaConditions.isEmpty())
     {
@@ -1143,12 +1144,220 @@ QList<QObject *> DBWorker::getStatisticsResults(bool strict)
             condition += herniaConditions[i];
         }
         condition = "id IN (SELECT card_id FROM Hernias WHERE " + condition + ')';
-        //qDebug() << condition;
+        qDebug() << "Hernia condition";
+        qDebug() << condition;
         conditionsList.push_back(condition);
     }
 
 
+    // Операции
 
+    // в списке условий все условия (техника, сетки, и т д) объединяются логическим "И"
+    // внутри каждого условия используется "ИЛИ" (например, техника == Bassini ИЛИ техника == Lichtenstein)
+    QStringList operationConditions;
+
+    QStringList operationTechniqueConditions;
+
+    if(this->m_treeViewModel->childrenAreChecked("Техника натяжного способа"))
+    {
+        int tensionMethodId = getIDByFieldData("OperationTechniques", "technique", "Натяжной способ");
+        QStringList tensionTechniques = this->m_treeViewModel->getCheckedChildren("Техника натяжного способа");
+        QString tensionTechniqueCondition;
+
+        if(!this->m_treeViewModel->allChildrenAreChecked("Техника натяжного способа"))
+        {
+            for(int i = 0; i < tensionTechniques.size(); ++i)
+            {
+                if(i > 0) tensionTechniqueCondition += " OR ";
+                int techId = this->getTissueRepairTechniqueId(tensionTechniques[i]);
+                tensionTechniqueCondition += "technique_id = " + QString::number(techId);
+            }
+        }
+
+        /*
+         * id IN (SELECT card_id FROM Hernias WHERE id IN (SELECT hernia_id FROM Operations
+         * WHERE method_id = tensionMethodId AND (tensionTechniqueCondition)))
+         *
+         *
+         * */
+
+        QString tensionOperationCondition;
+
+        if(tensionTechniqueCondition.isEmpty())
+        {
+            tensionOperationCondition = QString("(id IN (SELECT card_id FROM Hernias WHERE id IN (SELECT hernia_id FROM Operations "
+                                                "WHERE method_id = %1)))").arg(tensionMethodId);
+        }
+
+        else
+        {
+            tensionOperationCondition = QString("(id IN (SELECT card_id FROM Hernias WHERE id IN (SELECT hernia_id FROM Operations "
+                                                "WHERE method_id = %1 AND (%2))))").arg(tensionMethodId).arg(tensionTechniqueCondition);
+        }
+
+
+        operationTechniqueConditions.push_back(tensionOperationCondition);
+    }
+
+    if(this->m_treeViewModel->childrenAreChecked("Техника ненатяжного способа"))
+    {
+        int nonTensionMethodId = getIDByFieldData("OperationTechniques", "technique", "Ненатяжной способ");
+        QStringList nonTensionTechniques = this->m_treeViewModel->getCheckedChildren("Техника ненатяжного способа");
+        QString nonTensionTechniqueCondition;
+
+        if(!this->m_treeViewModel->allChildrenAreChecked("Техника ненатяжного способа"))
+        {
+            for(int i = 0; i < nonTensionTechniques.size(); ++i)
+            {
+                if(i > 0) nonTensionTechniqueCondition += " OR ";
+                int techId = this->getMeshImplantRepairTechniqueId(nonTensionTechniques[i]);
+                nonTensionTechniqueCondition += "technique_id = " + QString::number(techId);
+            }
+        }
+
+        QString nonTensionOperationCondition;
+
+        if(nonTensionTechniqueCondition.isEmpty())
+        {
+            nonTensionOperationCondition = QString("(id IN (SELECT card_id FROM Hernias WHERE id IN (SELECT hernia_id FROM Operations "
+                                                "WHERE method_id = %1)))").arg(nonTensionMethodId);
+        }
+
+        else
+        {
+            nonTensionOperationCondition = QString("(id IN (SELECT card_id FROM Hernias WHERE id IN "
+                                                "(SELECT hernia_id FROM Operations "
+                                                "WHERE method_id = %1 "
+                                                "AND (%2))))").arg(nonTensionMethodId).arg(nonTensionTechniqueCondition);
+        }
+
+        operationTechniqueConditions.push_back(nonTensionOperationCondition);
+    }
+
+    // объединяем условия для ненатяжного и натяжного способа логическим ИЛИ
+
+
+    if(!operationTechniqueConditions.isEmpty())
+    {
+        QString operationTechniqueCondition = operationTechniqueConditions.join(" OR ");
+        operationTechniqueCondition.push_front("(");
+        operationTechniqueCondition.push_back(")");
+        operationConditions.push_back(operationTechniqueCondition);
+    }
+
+
+
+    if(this->m_treeViewModel->childrenAreChecked("Тип сетки"))
+    {
+        if(!this->m_treeViewModel->allChildrenAreChecked("Тип сетки"))
+        {
+            QStringList meshesConditions;
+            for(auto mesh: this->m_treeViewModel->getCheckedChildren("Тип сетки"))
+            {
+                int meshId = this->getMeshId(mesh);
+                QString cond = "mesh_id = " + QString::number(meshId);
+                meshesConditions.push_back(cond);
+            }
+            QString meshesCondition = "(id IN (SELECT card_id FROM Hernias WHERE id IN "
+                                      "(SELECT hernia_id FROM"
+                                      " NonTensionOperations WHERE %1)))";
+            meshesCondition = meshesCondition.arg(meshesConditions.join(" OR "));
+            operationConditions.push_back(meshesCondition);
+        }
+
+        else
+        {
+            QString cond = "(id IN (SELECT card_id FROM Hernias WHERE id IN "
+                           "(SELECT hernia_id FROM NonTensionOperations)))";
+            operationConditions.push_back(cond);
+        }
+    }
+
+    if(this->m_treeViewModel->childrenAreChecked("Тип фиксации"))
+    {
+        if(!this->m_treeViewModel->allChildrenAreChecked("Тип фиксации"))
+        {
+            QStringList fixConditions;
+            for(auto fix: this->m_treeViewModel->getCheckedChildren("Тип фиксации"))
+            {
+                if(fix == "Сетка не фиксировалась")
+                    fixConditions.push_back("fixation_id IS NULL");
+                else
+                {
+                    int fixId = this->getFixationTypeId(fix);
+                    QString cond = "fixation_id = " + QString::number(fixId);
+                    fixConditions.push_back(cond);
+                }
+            }
+            QString fixCondition = "(id IN (SELECT card_id FROM Hernias WHERE id IN "
+                                      "(SELECT hernia_id FROM"
+                                      " NonTensionOperations WHERE %1)))";
+            fixCondition = fixCondition.arg(fixConditions.join(" OR "));
+            operationConditions.push_back(fixCondition);
+        }
+        else
+        {
+            QString cond = "(id IN (SELECT card_id FROM Hernias WHERE id IN "
+                           "(SELECT hernia_id FROM NonTensionOperations)))";
+            operationConditions.push_back(cond);
+        }
+    }
+
+    if(this->m_treeViewModel->childrenAreChecked("Тип такеров"))
+    {
+        if(!this->m_treeViewModel->allChildrenAreChecked("Тип такеров"))
+        {
+            QStringList tuckersConditions;
+            for(auto tucker: this->m_treeViewModel->getCheckedChildren("Тип такеров"))
+            {
+                int tuckerId = this->getTuckersId(tucker);
+                QString cond = "tuckers_id = " + QString::number(tuckerId);
+                tuckersConditions.push_back(cond);
+            }
+
+            QString tuckersCondition = "(id IN (SELECT card_id FROM Hernias WHERE id IN "
+                                      "(SELECT hernia_id FROM"
+                                      " NonTensionOperations WHERE %1)))";
+            tuckersCondition = tuckersCondition.arg(tuckersConditions.join(" OR "));
+            operationConditions.push_back(tuckersCondition);
+        }
+        else
+        {
+            QString cond = "(id IN (SELECT card_id FROM Hernias WHERE id IN "
+                           "(SELECT hernia_id FROM NonTensionOperations WHERE tuckers_id IS NOT NULL)))";
+            operationConditions.push_back(cond);
+        }
+    }
+
+    if(this->m_treeViewModel->childrenAreChecked("Осложнения"))
+    {
+        QStringList complicationsConditions;
+        for(auto comp: this->m_treeViewModel->getCheckedChildren("Осложнения"))
+        {
+            if(comp == "Интраоперационные")
+                complicationsConditions.push_back("intraoperative_complications = true");
+            else if(comp == "Ранние послеоперационные")
+                complicationsConditions.push_back("early_complications = true");
+            else if(comp == "Поздние послеоперационные")
+                complicationsConditions.push_back("late_complications = true");
+        }
+        QString complicationsCondition = "id IN (SELECT card_id FROM Hernias WHERE id IN (SELECT hernia_id FROM Operations WHERE %1))";
+        complicationsCondition = complicationsCondition.arg(complicationsConditions.join(" OR "));
+        operationConditions.push_back(complicationsCondition);
+    }
+
+
+
+    if(!operationConditions.isEmpty())
+    {
+        QString operationCondition = operationConditions.join(" AND ");
+        operationCondition.push_front("(");
+        operationCondition.push_back(")");
+//        qDebug() << "Условие по операциям: ";
+//        qDebug() << operationCondition;
+//        qDebug() << "";
+        conditionsList.push_back(operationCondition);
+    }
 
 
     // *************************************************************************
@@ -1407,6 +1616,11 @@ QString DBWorker::getOperationTechnique(int herniaId)
     return "";
 }
 
+QString DBWorker::getMeshById(int id)
+{
+    return this->getFieldDataByID("Meshes", "mesh", id);
+}
+
 
 
 int DBWorker::getOccupationId(const QString &occupation)
@@ -1610,28 +1824,6 @@ QObject *DBWorker::getRiskFactorsInfo(int cardId)
     q.exec();
     q.next();
 
-    /*if(createTable("RiskFactors",
-                   "id INTEGER UNIQUE PRIMARY KEY, "
-                   "card_id INTEGER UNSIGNED, "
-                   "occupation_id TINYINT UNSIGNED,"
-                   "sporting_activities_id TINYINT UNSIGNED, "
-                   "smoking_history_id TINYINT UNSIGNED, "
-                   "cigs_per_day TINYINT UNSIGNED, "
-                   "years_of_smoking TINYINT UNSIGNED, "
-                   "diabetes_I BOOLEAN, "
-                   "diabetes_II BOOLEAN, "
-                   "hobl BOOLEAN, "
-                   "hypertension BOOLEAN, "
-                   "heart_disease BOOLEAN, "
-                   "kidney_disease BOOLEAN, "
-                   "gastritis BOOLEAN, "
-                   "aortic_aneurysm BOOLEAN, "
-                   "immunosuppression BOOLEAN, "
-                   "coagulopathy BOOLEAN, "
-                   "platelet_aggregation_inhibitors BOOLEAN, "
-                   "other_factors VARCHAR(300)"
-                   ))*/
-
     int occupationId = q.value(2).toInt();
     int sportActivitiesId = q.value(3).toInt();
     int smokingHistoryId = q.value(4).toInt();
@@ -1644,15 +1836,16 @@ QObject *DBWorker::getRiskFactorsInfo(int cardId)
     bool heartDisease = q.value(11).toBool();
     bool kidneyDisease = q.value(12).toBool();
     bool gastritis = q.value(13).toBool();
-    bool aorticAneurism = q.value(14).toBool();
-    bool immunosuppression = q.value(15).toBool();
-    bool coagulopathy = q.value(16).toBool();
-    bool plateletAggregationInhibitors = q.value(17).toBool();
-    QString otherFactors = q.value(18).toString();
+    bool ulcer = q.value(14).toBool();
+    bool aorticAneurism = q.value(15).toBool();
+    bool immunosuppression = q.value(16).toBool();
+    bool coagulopathy = q.value(17).toBool();
+    bool plateletAggregationInhibitors = q.value(18).toBool();
+    QString otherFactors = q.value(19).toString();
 
     QObject *info = new RiskFactorsInfo(occupationId,sportActivitiesId,smokingHistoryId,cigsPerDay,yearsOfSmoking,
                                         diabetesI,diabetesII,hobl,hypertension,heartDisease,kidneyDisease,
-                                        gastritis,aorticAneurism,immunosuppression,coagulopathy,
+                                        gastritis,ulcer,aorticAneurism,immunosuppression,coagulopathy,
                                         plateletAggregationInhibitors,otherFactors,this);
     return info;
 }
@@ -1868,12 +2061,6 @@ QObject *DBWorker::getHerniaInfo(int herniaId)
                                                           chronicNeuralgia, testicularAtrophy, diseaseRecurrence);
     }
 
-    /*void setEarlyPainInfo(const QList<bool>& inRest, const QList<int>& inRestDegree,
-    const QList<bool>& inMotion, const QList<int>& inMotionDegree,
-    const QList<bool>& analgesics, const QList<int>& analgesicsDays,
-    const QList<bool>& analgesicsOrally, const QList<bool>& analgesicsInjections);*/
-
-
 
 
     QList<bool> inRestList = {false, false, false} ;
@@ -1883,13 +2070,19 @@ QObject *DBWorker::getHerniaInfo(int herniaId)
     QList<int> inMotionDegreeList = {0, 0, 0};
 
     QList<bool> analgesicsList = {false, false, false} ;
+
     QList<int> analgesicsDaysList = {0, 0, 0};
 
     QList<bool> analgesicsOrallyList = {false, false, false} ;
-    QList<bool> analgesicsInjectionsList = {false, false, false} ;
+    QList<int> orallyDaysList = {0, 0, 0};
 
-    q.prepare("SELECT days_after_operation, pain_in_rest_degree, pain_in_motion_degree, analgesics, days_of_medication, "
-              "orally, injections FROM EarlyPostOperativePain WHERE hernia_id = ?");
+    QList<bool> analgesicsInjectionsList = {false, false, false} ;
+    QList<int> injectionsDaysList = {0, 0, 0};
+
+    q.prepare("SELECT days_after_operation, pain_in_rest_degree, pain_in_motion_degree, "
+              "analgesics, days_of_medication, "
+              "orally, days_of_medication_orally, injections, "
+              "days_of_medication_injections FROM EarlyPostOperativePain WHERE hernia_id = ?");
     q.addBindValue(herniaId);
     q.exec();
     while(q.next())
@@ -1901,7 +2094,9 @@ QObject *DBWorker::getHerniaInfo(int herniaId)
         bool analgesics = q.value(3).toBool();
         QVariant analgesicsDays = q.value(4);
         bool analgesicsOrally = q.value(5).toBool();
-        bool analgesicsInjections = q.value(6).toBool();
+        QVariant orallyDays = q.value(6);
+        bool analgesicsInjections = q.value(7).toBool();
+        QVariant injectionsDays = q.value(8);
 
         int index = (daysAfterOperation == 1) ? 0 : (daysAfterOperation == 3) ? 1 : 2;
         if(!inRestDegree.isNull())
@@ -1918,13 +2113,25 @@ QObject *DBWorker::getHerniaInfo(int herniaId)
         {
             analgesicsList[index] = true;
             analgesicsDaysList[index] = analgesicsDays.toInt();
-            analgesicsOrallyList[index] = analgesicsOrally;
-            analgesicsInjectionsList[index] = analgesicsInjections;
+            if(analgesicsOrally)
+            {
+                analgesicsOrallyList[index] = true;
+                orallyDaysList[index] = orallyDays.toInt();
+            }
+
+            if(analgesicsInjections)
+            {
+                analgesicsInjectionsList[index] = true;
+                injectionsDaysList[index] = injectionsDays.toInt();
+            }
         }
     }
 
-    herniaInfo->setEarlyPainInfo(inRestList, inRestDegreeList, inMotionList, inMotionDegreeList, analgesicsList, analgesicsDaysList,
-                                 analgesicsOrallyList, analgesicsInjectionsList);
+    herniaInfo->setEarlyPainInfo(inRestList, inRestDegreeList, inMotionList, inMotionDegreeList,
+                                 analgesicsList, analgesicsDaysList,
+                                 analgesicsOrallyList,
+                                 orallyDaysList,
+                                 analgesicsInjectionsList, injectionsDaysList);
 
 
     /*
@@ -2171,8 +2378,15 @@ bool DBWorker::insertPatientCard(
                    */
     int id = this->getIDForInsert("PatientCards");
     int regionID = this->getIDByFieldData("Regions", "name", region);
-    QString sex_insert = (sex == "Мужской") ? "М" : "Ж";
-    QString rhesusFactor_insert = (rhesusFactor == "Rh+") ? "+" : "-";
+    QString sex_insert = (sex == "Мужской") ? "М" : "Ж";\
+
+    QString rhesusFactor_insert;
+    if(rhesusFactor == "Rh+")
+        rhesusFactor_insert = "+";
+    else if(rhesusFactor == "Rh-")
+        rhesusFactor_insert = "-";
+    // иначе это будет пустая строка
+
 //    int passportSeries_insert = passportSeries.toInt();
 //    int passportNumber_insert = passportNumber.toInt();
 //    int weight_insert = weight.toInt();
@@ -2231,6 +2445,7 @@ bool DBWorker::insertRiskFactors(int cardId,
                                  bool heartDisease,
                                  bool kidneyDisease,
                                  bool gastritis,
+                                 bool ulcer,
                                  bool aorticAneurysm,
                                  bool immunosuppression,
                                  bool coagulopathy,
@@ -2255,12 +2470,13 @@ bool DBWorker::insertRiskFactors(int cardId,
               "heart_disease , "
               "kidney_disease , "
               "gastritis , "
+              "ulcer, "
               "aortic_aneurysm , "
               "immunosuppression , "
               "coagulopathy , "
               "platelet_aggregation_inhibitors , "
               "other_factors) "
-              "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+              "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     q.addBindValue(id);
     q.addBindValue(cardId);
     q.addBindValue(occupationId);
@@ -2286,6 +2502,7 @@ bool DBWorker::insertRiskFactors(int cardId,
     q.addBindValue(heartDisease);
     q.addBindValue(kidneyDisease);
     q.addBindValue(gastritis);
+    q.addBindValue(ulcer);
     q.addBindValue(aorticAneurysm);
     q.addBindValue(immunosuppression);
     q.addBindValue(coagulopathy);
@@ -2563,11 +2780,13 @@ bool DBWorker::insertNonTensionOperation(int herniaId, const QString &mesh,
     return q.exec();
 }
 
-bool DBWorker::insertEarlyPostOperativePain(int herniaId, int daysAfterOperation, int painInRest,
-                                            int painInMotion, bool analgesics, const QString &daysOfMedication,
-                                            bool orally, bool injections)
+bool DBWorker::insertEarlyPostOperativePain(int herniaId, int daysAfterOperation, int painInRest, int painInMotion,
+                                            bool analgesics, const QString& analgesicsDays,
+                                            bool orally, const QString& orallyDays,
+                                            bool injections, const QString& injectionsDays)
 {
-    /*if(createTable("EarlyPostoperativePain",
+
+    /*createTable("EarlyPostoperativePain",
                    "id INTEGER UNIQUE PRIMARY KEY, "
                    "hernia_id INTEGER UNSIGNED, "
                    "days_after_operation TINYINT UNSIGNED, "
@@ -2576,13 +2795,17 @@ bool DBWorker::insertEarlyPostOperativePain(int herniaId, int daysAfterOperation
                    "analgesics BOOLEAN, "
                    "days_of_medication TINYINT UNSIGNED, "
                    "orally BOOLEAN, "
-                   "injections BOOLEAN"))*/
+                   "days_of_medication_orally TINYINT UNSIGNED, "
+                   "injections BOOLEAN, "
+                   "days_of_medication_injections TINYINT UNSIGNED")*/
+
 
     int id = this->getIDForInsert("EarlyPostoperativePain");
     QSqlQuery q(this->m_db);
     q.prepare("INSERT INTO EarlyPostoperativePain (id, hernia_id, days_after_operation, "
               "pain_in_rest_degree, pain_in_motion_degree, analgesics, days_of_medication, "
-              "orally, injections ) VALUES (?,?,?,?,?,?,?,?,?)");
+              "orally, days_of_medication_orally, "
+              "injections, days_of_medication_injections) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
     q.addBindValue(id);
     q.addBindValue(herniaId);
     q.addBindValue(daysAfterOperation);
@@ -2595,12 +2818,23 @@ bool DBWorker::insertEarlyPostOperativePain(int herniaId, int daysAfterOperation
     else
         q.addBindValue(painInMotion);
     q.addBindValue(analgesics);
-    if(daysOfMedication.isEmpty())
+
+    if(analgesicsDays.isEmpty())
         q.addBindValue(QVariant(QVariant::Int));
     else
-        q.addBindValue(daysOfMedication);
+        q.addBindValue(analgesicsDays);
+
     q.addBindValue(orally);
+    if(orallyDays.isEmpty())
+        q.addBindValue(QVariant(QVariant::Int));
+    else
+        q.addBindValue(orallyDays);
+
     q.addBindValue(injections);
+    if(injectionsDays.isEmpty())
+        q.addBindValue(QVariant(QVariant::Int));
+    else
+        q.addBindValue(injectionsDays);
     return q.exec();
 }
 
@@ -2619,7 +2853,7 @@ bool DBWorker::insertHerniaImages(int herniaId, const QStringList &sources, cons
         {
             source.remove("file:///");
             QString ext;
-            for(int ch = source.length() - 1;;--ch)
+            for(int ch = source.length() - 1;;--ch) // выделяем из строки source подстроку с форматом
             {
                 if(source[ch] == '.') break;
                 ext.push_front(source[ch]);
@@ -2781,7 +3015,12 @@ bool DBWorker::updatePatientCard(int cardId,
 {
     int regionID = this->getIDByFieldData("Regions", "name", region);
     QString sex_insert = (sex == "Мужской") ? "М" : "Ж";
-    QString rhesusFactor_insert = (rhesusFactor == "Rh+") ? "+" : "-";
+
+    QString rhesusFactor_insert;
+    if(rhesusFactor == "Rh+")
+        rhesusFactor_insert = "+";
+    else if(rhesusFactor == "Rh-")
+        rhesusFactor_insert = "-";
 
     QSqlQuery q(this->m_db);
 
@@ -2838,6 +3077,7 @@ bool DBWorker::updateRiskFactors(int cardId,
                                  bool heartDisease,
                                  bool kidneyDisease,
                                  bool gastritis,
+                                 bool ulcer,
                                  bool aorticAneurysm,
                                  bool immunosuppression,
                                  bool coagulopathy,
@@ -2858,6 +3098,7 @@ bool DBWorker::updateRiskFactors(int cardId,
               "heart_disease = ?, "
               "kidney_disease = ?, "
               "gastritis = ?, "
+              "ulcer = ?, "
               "aortic_aneurysm = ?, "
               "immunosuppression = ?, "
               "coagulopathy = ?, "
@@ -2882,6 +3123,7 @@ bool DBWorker::updateRiskFactors(int cardId,
     q.addBindValue(heartDisease);
     q.addBindValue(kidneyDisease);
     q.addBindValue(gastritis);
+    q.addBindValue(ulcer);
     q.addBindValue(aorticAneurysm);
     q.addBindValue(immunosuppression);
     q.addBindValue(coagulopathy);
@@ -2984,18 +3226,679 @@ QList<QObject *> DBWorker::sexDistribution(const QList<int> &cardIDs)
     QList<float> percentList;
     MyFunctions::calculatePercentList(countList, percentList);
 
-    QList<QObject*> distrubutionList;
+    QList<QObject*> distributionList;
     for(int i = 0; i < uniqueSex.size(); ++i)
     {
         QString sex = (uniqueSex[i] == "М") ? "Мужской" : "Женский";
-        distrubutionList.push_back(new DistributionElement(sex, countList[i], percentList[i], this));
+        distributionList.push_back(new DistributionElement(sex, countList[i], percentList[i], this));
     }
 
-    MyFunctions::sortDistributionList(distrubutionList);
-    return distrubutionList;
+    MyFunctions::sortDistributionList(distributionList);
+    return distributionList;
 }
 
+QList<QObject *> DBWorker::operationMethodsDistribution(const QList<int> &cardIDs)
+{
+    QMap<QString, int> countMap;
+        for(auto cardId: cardIDs)
+        {
+            QSqlQuery q(this->m_db);
+            q.prepare("SELECT DISTINCT method_id FROM Operations WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?)");
+            q.addBindValue(cardId);
+            if(!q.exec())
+            {
+                qDebug() << "operationMethodsDistribution: некорректный запрос";
+                continue;
+            }
 
+            if(!q.next()) // операций не было
+            {
+                QString noOperationsString = "Операции не проводились";
+                if(!countMap.contains(noOperationsString))
+                    countMap[noOperationsString] = 1;
+                else
+                    ++countMap[noOperationsString];
+            }
+
+            else do
+            {
+                int methodId = q.value(0).toInt();
+                QString methodString = getFieldDataByID("OperationTechniques", "technique", methodId);
+                if(!countMap.contains(methodString))
+                    countMap[methodString] = 1;
+                else
+                    ++countMap[methodString];
+            }while(q.next());
+        }
+
+        QList<QObject*> distributionList;
+
+        for(auto key: countMap.keys())
+        {
+            int count = countMap[key];
+            float percent = static_cast<float>(count) * 100 / cardIDs.count();
+            distributionList << new DistributionElement(key, count, percent);
+        }
+
+        MyFunctions::sortDistributionList(distributionList);
+        return distributionList;
+}
+
+QList<QObject *> DBWorker::tensionOperationsDistribution(const QList<int> &cardIDs)
+{
+    QMap<QString, int> countMap;
+    int tensionTechniqueId = getIDByFieldData("OperationTechniques", "technique", "Натяжной способ");
+    int nonTensionTechniqueId = getIDByFieldData("OperationTechniques", "technique", "Ненатяжной способ");
+
+        for(auto cardId: cardIDs)
+        {
+            bool nonTensionOperations = false;
+            QSqlQuery q(this->m_db);
+
+            // *********  Cначала проверяем, были ли у пациента ненатяжные операции *************
+            q.prepare("SELECT id FROM Operations "
+                      "WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?) "
+                      "AND method_id = ?");
+            q.addBindValue(cardId);
+            q.addBindValue(nonTensionTechniqueId);
+            if(!q.exec())
+            {
+                qDebug() << "tensionOperationsDistribution: некорректный запрос";
+                continue;
+            }
+
+            if(q.next())
+            {
+                nonTensionOperations = true;
+                QString nonTensionString = "Операции ненатяжным способом";
+                if(!countMap.contains(nonTensionString))
+                    countMap[nonTensionString] = 1;
+                else
+                    ++countMap[nonTensionString];
+            }
+
+            // ********** Ищем натяжные операции ***********************************************
+
+            // получаем уникальные техники натяжной операции для каждого пациента
+            q.prepare("SELECT DISTINCT technique_id FROM Operations "
+                      "WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?) "
+                      "AND method_id = ?");
+            q.addBindValue(cardId);
+            q.addBindValue(tensionTechniqueId);
+
+            if(!q.exec())
+            {
+                qDebug() << "tensionOperationsDistribution: некорректный запрос";
+                continue;
+            }
+
+            if(!q.next()) // были только ненатяжные операции или операций вообще не было
+            {
+                if(!nonTensionOperations) // значит операции вообще не проводились
+                {
+                    QString noOperationsString = "Операции не проводились";
+                    if(!countMap.contains(noOperationsString))
+                        countMap[noOperationsString] = 1;
+                    else
+                        ++countMap[noOperationsString];
+                }
+            }
+
+            else do // натяжные операции проводились
+            {
+                int techniqueId = q.value(0).toInt();
+                QString technique = getFieldDataByID("TissueRepairTechniques", "technique", techniqueId);
+                if(!countMap.contains(technique))
+                    countMap[technique] = 1;
+                else
+                    ++countMap[technique];
+
+            } while(q.next());
+        }
+
+        QList<QObject*> distributionList;
+
+        for(auto key: countMap.keys())
+        {
+            int count = countMap[key];
+            float percent = static_cast<float>(count) * 100 / cardIDs.count();
+            distributionList << new DistributionElement(key, count, percent);
+        }
+
+        MyFunctions::sortDistributionList(distributionList);
+        return distributionList;
+}
+
+QList<QObject *> DBWorker::nonTensionOperationsDistribution(const QList<int> &cardIDs)
+{
+    QMap<QString, int> countMap;
+    int tensionTechniqueId = getIDByFieldData("OperationTechniques", "technique", "Натяжной способ");
+    int nonTensionTechniqueId = getIDByFieldData("OperationTechniques", "technique", "Ненатяжной способ");
+
+        for(auto cardId: cardIDs)
+        {
+            bool tensionOperations = false;
+            QSqlQuery q(this->m_db);
+
+            // *********  Cначала проверяем, были ли у пациента натяжные операции *************
+            q.prepare("SELECT id FROM Operations "
+                      "WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?) "
+                      "AND method_id = ?");
+            q.addBindValue(cardId);
+            q.addBindValue(tensionTechniqueId);
+            if(!q.exec())
+            {
+                qDebug() << "nonTensionOperationsDistribution: некорректный запрос";
+                continue;
+            }
+
+            if(q.next())
+            {
+                tensionOperations = true;
+                QString tensionString = "Операции натяжным способом";
+                if(!countMap.contains(tensionString))
+                    countMap[tensionString] = 1;
+                else
+                    ++countMap[tensionString];
+            }
+
+            // ********** Ищем ненатяжные операции ***********************************************
+
+            // получаем уникальные техники ненатяжной операции для каждого пациента
+            q.prepare("SELECT DISTINCT technique_id FROM Operations "
+                      "WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?) "
+                      "AND method_id = ?");
+            q.addBindValue(cardId);
+            q.addBindValue(nonTensionTechniqueId);
+
+            if(!q.exec())
+            {
+                qDebug() << "nonTensionOperationsDistribution: некорректный запрос";
+                continue;
+            }
+
+            if(!q.next()) // были только натяжные операции или операций вообще не было
+            {
+                if(!tensionOperations) // значит операции вообще не проводились
+                {
+                    QString noOperationsString = "Операции не проводились";
+                    if(!countMap.contains(noOperationsString))
+                        countMap[noOperationsString] = 1;
+                    else
+                        ++countMap[noOperationsString];
+                }
+            }
+
+            else do // ненатяжные операции проводились
+            {
+                int techniqueId = q.value(0).toInt();
+                QString technique = getFieldDataByID("MeshImplantRepairTechniques", "technique", techniqueId);
+                if(!countMap.contains(technique))
+                    countMap[technique] = 1;
+                else
+                    ++countMap[technique];
+
+            } while(q.next());
+        }
+
+        QList<QObject*> distributionList;
+
+        for(auto key: countMap.keys())
+        {
+            int count = countMap[key];
+            float percent = static_cast<float>(count) * 100 / cardIDs.count();
+            distributionList << new DistributionElement(key, count, percent);
+        }
+
+        MyFunctions::sortDistributionList(distributionList);
+        return distributionList;
+}
+
+QList<QObject *> DBWorker::meshesDistribution(const QList<int> &cardIDs)
+{
+    QMap<QString, int> countMap;
+    int tensionTechniqueId = getIDByFieldData("OperationTechniques", "technique", "Натяжной способ");
+
+        for(auto cardId: cardIDs)
+        {
+            bool tensionOperations = false;
+            QSqlQuery q(this->m_db);
+
+            // *********  Cначала проверяем, были ли у пациента натяжные операции *************
+            q.prepare("SELECT id FROM Operations "
+                      "WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?) "
+                      "AND method_id = ?");
+            q.addBindValue(cardId);
+            q.addBindValue(tensionTechniqueId);
+            if(!q.exec())
+            {
+                qDebug() << "meshesDistribution: некорректный запрос";
+                continue;
+            }
+
+            if(q.next())
+            {
+                tensionOperations = true;
+                QString tensionString = "Операции натяжным способом";
+                if(!countMap.contains(tensionString))
+                    countMap[tensionString] = 1;
+                else
+                    ++countMap[tensionString];
+            }
+
+            // ********** Ищем сетки ***********************************************
+
+            // получаем уникальные сетки для каждого пациента
+            q.prepare("SELECT DISTINCT mesh_id FROM NonTensionOperations "
+                      "WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?)");
+            q.addBindValue(cardId);
+
+            if(!q.exec())
+            {
+                qDebug() << "meshesDistribution: некорректный запрос";
+                continue;
+            }
+
+            if(!q.next()) // были только натяжные операции или операций вообще не было
+            {
+                if(!tensionOperations) // значит операции вообще не проводились
+                {
+                    QString noOperationsString = "Операции не проводились";
+                    if(!countMap.contains(noOperationsString))
+                        countMap[noOperationsString] = 1;
+                    else
+                        ++countMap[noOperationsString];
+                }
+            }
+
+            else do // ненатяжные операции проводились
+            {
+                int meshId = q.value(0).toInt();
+                QString mesh = this->getMeshById(meshId);
+                if(!countMap.contains(mesh))
+                    countMap[mesh] = 1;
+                else
+                    ++countMap[mesh];
+
+            } while(q.next());
+        }
+
+        QList<QObject*> distributionList;
+
+        for(auto key: countMap.keys())
+        {
+            int count = countMap[key];
+            float percent = static_cast<float>(count) * 100 / cardIDs.count();
+            distributionList << new DistributionElement(key, count, percent);
+        }
+
+        MyFunctions::sortDistributionList(distributionList);
+        return distributionList;
+}
+
+QList<QObject *> DBWorker::fixationDistribution(const QList<int> &cardIDs)
+{
+    QMap<QString, int> countMap;
+    int tensionTechniqueId = getIDByFieldData("OperationTechniques", "technique", "Натяжной способ");
+
+        for(auto cardId: cardIDs)
+        {
+            bool tensionOperations = false;
+            QSqlQuery q(this->m_db);
+
+            // *********  Cначала проверяем, были ли у пациента натяжные операции *************
+            q.prepare("SELECT id FROM Operations "
+                      "WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?) "
+                      "AND method_id = ?");
+            q.addBindValue(cardId);
+            q.addBindValue(tensionTechniqueId);
+            if(!q.exec())
+            {
+                qDebug() << "fixationDistribution: некорректный запрос";
+                continue;
+            }
+
+            if(q.next())
+            {
+                tensionOperations = true;
+                QString tensionString = "Операции натяжным способом";
+                if(!countMap.contains(tensionString))
+                    countMap[tensionString] = 1;
+                else
+                    ++countMap[tensionString];
+            }
+
+            // ********** Ищем сетки ***********************************************
+
+            // получаем уникальные фиксации для каждого пациента
+            q.prepare("SELECT DISTINCT fixation_id FROM NonTensionOperations "
+                      "WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?)");
+            q.addBindValue(cardId);
+
+            if(!q.exec())
+            {
+                qDebug() << "fixationDistribution: некорректный запрос";
+                continue;
+            }
+
+            if(!q.next()) // были только натяжные операции или операций вообще не было
+            {
+                if(!tensionOperations) // значит операции вообще не проводились
+                {
+                    QString noOperationsString = "Операции не проводились";
+                    if(!countMap.contains(noOperationsString))
+                        countMap[noOperationsString] = 1;
+                    else
+                        ++countMap[noOperationsString];
+                }
+            }
+
+            else do // ненатяжные операции проводились
+            {
+                if(q.value(0).isNull())
+                {
+                    QString noFixation = "Сетка не фиксировалась";
+                    if(!countMap.contains(noFixation))
+                        countMap[noFixation] = 1;
+                    else
+                        ++countMap[noFixation];
+                }
+                else
+                {
+                    int fixationId = q.value(0).toInt();
+                    QString fixation = this->getFieldDataByID("FixationTypes", "type", fixationId);
+                    if(!countMap.contains(fixation))
+                        countMap[fixation] = 1;
+                    else
+                        ++countMap[fixation];
+                }
+
+
+            } while(q.next());
+        }
+
+        QList<QObject*> distributionList;
+
+        for(auto key: countMap.keys())
+        {
+            int count = countMap[key];
+            float percent = static_cast<float>(count) * 100 / cardIDs.count();
+            distributionList << new DistributionElement(key, count, percent);
+        }
+
+        MyFunctions::sortDistributionList(distributionList);
+        return distributionList;
+}
+
+QList<QObject *> DBWorker::tuckersDistribution(const QList<int> &cardIDs)
+{
+    /* остальные случаи:
+     * 1) операции не проводились
+     * 2) операции натяжным способом
+     * 3) фиксации не было
+     * 4) другой тип фиксации */
+
+    QMap<QString, int> countMap;
+    int tensionTechniqueId = getIDByFieldData("OperationTechniques", "technique", "Натяжной способ");
+
+    for(auto cardId: cardIDs)
+    {
+        bool tensionOperations = false;
+        QSqlQuery q(this->m_db);
+
+        // *********  Cначала проверяем, были ли у пациента натяжные операции *************
+        q.prepare("SELECT id FROM Operations "
+                  "WHERE hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?) "
+                  "AND method_id = ?");
+        q.addBindValue(cardId);
+        q.addBindValue(tensionTechniqueId);
+
+        if(!q.exec())
+        {
+            qDebug() << "tuckersDistribution: некорректный запрос";
+            continue;
+        }
+
+        if(q.next())
+        {
+            tensionOperations = true;
+            QString tensionString = "Операции натяжным способом";
+            if(!countMap.contains(tensionString))
+                countMap[tensionString] = 1;
+            else
+                ++countMap[tensionString];
+        }
+
+        q.prepare("SELECT DISTINCT fixation_id FROM NonTensionOperations where hernia_id IN "
+                  "(SELECT id FROM Hernias WHERE card_id = ?)");
+        q.addBindValue(cardId);
+
+        if(!q.exec())
+        {
+            qDebug() << "tuckersDistribution: некорректный запрос";
+            continue;
+        }
+
+        if(!q.next()) // были только натяжные операции или операций вообще не было
+        {
+            if(!tensionOperations) // значит операции вообще не проводились
+            {
+                QString noOperationsString = "Операции не проводились";
+                if(!countMap.contains(noOperationsString))
+                    countMap[noOperationsString] = 1;
+                else
+                    ++countMap[noOperationsString];
+            }
+        }
+
+        else do
+        {
+            if(q.value(0).isNull())
+            {
+                QString noFixation = "Сетка не фиксировалась";
+                if(!countMap.contains(noFixation))
+                    countMap[noFixation] = 1;
+                else
+                    ++countMap[noFixation];
+            }
+            else
+            {
+                QString fixation = this->getFieldDataByID("FixationTypes", "type", q.value(0).toInt());
+                if(fixation != "Такеры")
+                {
+                    if(!countMap.contains(fixation))
+                        countMap[fixation] = 1;
+                    else
+                        ++countMap[fixation];
+                }
+                else
+                {
+                    QSqlQuery tq(this->m_db);
+                    tq.prepare("SELECT DISTINCT tuckers_id FROM NonTensionOperations WHERE tuckers_id IS NOT NULL "
+                               "AND hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?)");
+                    tq.addBindValue(cardId);
+                    if(!tq.exec())
+                    {
+                        qDebug() << "tuckersDistribution: некорректный запрос";
+                        continue;
+                    }
+
+                    // выборка не может быть пустой, так как тип фиксации в этом месте - точно такеры
+
+                    while(tq.next())
+                    {
+                        int tuckerId = tq.value(0).toInt();
+                        QString tucker = this->getFieldDataByID("Tuckers", "tucker", tuckerId);
+                        if(!countMap.contains(tucker))
+                            countMap[tucker] = 1;
+                        else
+                            ++countMap[tucker];
+                    }
+
+                }
+            }
+        } while(q.next());
+
+
+
+    }
+
+    QList<QObject*> distributionList;
+
+    for(auto key: countMap.keys())
+    {
+        int count = countMap[key];
+        float percent = static_cast<float>(count) * 100 / cardIDs.count();
+        distributionList << new DistributionElement(key, count, percent);
+    }
+
+    MyFunctions::sortDistributionList(distributionList);
+    return distributionList;
+}
+
+QList<QObject *> DBWorker::complicationsDistribution(const QList<int> &cardIDs)
+{
+    QMap<QString, int> countMap;
+    for(auto cardId: cardIDs)
+    {
+        QSqlQuery q(this->m_db);
+
+        // сначала проверим, были ли операции вообще
+
+        q.prepare("SELECT id FROM Operations WHERE hernia_id IN "
+                  "(SELECT id FROM Hernias WHERE card_id = ?)");
+        q.addBindValue(cardId);
+        if(!q.exec())
+        {
+            qDebug() << "DBWorker::complicationsDistribution: Некорректный запрос";
+            continue;
+        }
+        if(!q.next()) // операции не проводились
+        {
+            QString noOperationsString = "Операции не проводились";
+            if(!countMap.contains(noOperationsString))
+                countMap[noOperationsString] = 1;
+            else
+                ++countMap[noOperationsString];
+        }
+
+        else
+        {
+            // cначала посмотрим, есть ли операции без осложнений
+            q.prepare("SELECT id FROM Operations WHERE intraoperative_complications = false "
+                      "AND early_complications = false AND late_complications = false AND "
+                      "hernia_id IN (SELECT id FROM Hernias WHERE card_id = ?)");
+            q.addBindValue(cardId);
+            if(!q.exec())
+            {
+                qDebug() << "DBWorker::complicationsDistribution: Некорректный запрос";
+                continue;
+            }
+            if(q.next())
+            {
+                QString noComplicationsString = "Операции без осложнений";
+                if(!countMap.contains(noComplicationsString))
+                    countMap[noComplicationsString] = 1;
+                else
+                    ++countMap[noComplicationsString];
+            }
+
+            // Интраоперационные
+            q.prepare("SELECT id FROM Operations WHERE intraoperative_complications = true AND hernia_id IN "
+                      "(SELECT id FROM Hernias WHERE card_id = ?)");
+            q.addBindValue(cardId);
+            if(!q.exec())
+            {
+                qDebug() << "DBWorker::complicationsDistribution: Некорректный запрос";
+                continue;
+            }
+            if(q.next())
+            {
+                QString intraString = "Интраоперационные";
+                if(!countMap.contains(intraString))
+                    countMap[intraString] = 1;
+                else
+                    ++countMap[intraString];
+            }
+
+            // Ранние
+            q.prepare("SELECT id FROM Operations WHERE early_complications = true AND hernia_id IN "
+                      "(SELECT id FROM Hernias WHERE card_id = ?)");
+            q.addBindValue(cardId);
+            if(!q.exec())
+            {
+                qDebug() << "DBWorker::complicationsDistribution: Некорректный запрос";
+                continue;
+            }
+            if(q.next())
+            {
+                QString earlyString = "Ранние послеоперационные";
+                if(!countMap.contains(earlyString))
+                    countMap[earlyString] = 1;
+                else
+                    ++countMap[earlyString];
+            }
+
+            // Поздние
+            q.prepare("SELECT id FROM Operations WHERE late_complications = true AND hernia_id IN "
+                      "(SELECT id FROM Hernias WHERE card_id = ?)");
+            q.addBindValue(cardId);
+            if(!q.exec())
+            {
+                qDebug() << "DBWorker::complicationsDistribution: Некорректный запрос";
+                continue;
+            }
+            if(q.next())
+            {
+                QString lateString = "Поздние послеоперационные";
+                if(!countMap.contains(lateString))
+                    countMap[lateString] = 1;
+                else
+                    ++countMap[lateString];
+            }
+        }
+    }
+
+    QList<QObject*> distributionList;
+
+    for(auto key: countMap.keys())
+    {
+        int count = countMap[key];
+        float percent = static_cast<float>(count) * 100 / cardIDs.count();
+        distributionList << new DistributionElement(key, count, percent);
+    }
+
+    MyFunctions::sortDistributionList(distributionList);
+    return distributionList;
+}
+
+void DBWorker::addMeshToLastAdded(int userId, const QString& mesh)
+{
+    int meshId = getMeshId(mesh);
+    QSqlQuery q(this->m_db);
+    // Проверка на существование
+    q.prepare("SELECT * FROM LastAddedMeshes WHERE user_id = ? AND mesh_id = ?");
+    q.addBindValue(userId);
+    q.addBindValue(meshId);
+    if(!q.exec())
+        qDebug() << "DBWorker::addMeshToLastAdded: Не удалось проверить существование записи в таблице";
+    if(q.next())
+    {
+        q.prepare("DELETE FROM LastAddedMeshes WHERE user_id = ? AND mesh_id = ?");
+        q.addBindValue(userId);
+        q.addBindValue(meshId);
+        if(!q.exec())
+            qDebug() << "DBWorker::addMeshToLastAdded: Не удалось удалить существующую запись";
+    }
+    // Добавление
+    q.prepare("INSERT INTO LastAddedMeshes (user_id, mesh_id) VALUES (?,?)");
+    q.addBindValue(userId);
+    q.addBindValue(meshId);
+    if(!q.exec())
+        qDebug() << "DBWorker::addMeshToLastAdded: Не удалось добавить сетку в последние добавленные";
+    else
+        qDebug() << "DBWorker::addMeshToLastAdded: Сетка добавлена в последние добавленные";
+}
 
 
 QString DBWorker::getFieldDataByID(const QString &tableName, const QString &fieldName, int id)
@@ -4101,15 +5004,47 @@ QStringList DBWorker::meshImplantRepairTechniques()
     return list;
 }
 
-QStringList DBWorker::meshes()
+QStringList DBWorker::meshes(int userId)
 {
-    QStringList list;
+    // В первую очередь ищутся сетки из таблицы LastAddedMeshes для пользоваьеля с id = userId
+    QStringList lastAddedMeshes;
     QSqlQuery q(this->m_db);
+
+    if(userId > 0)
+    {
+        q.prepare("SELECT mesh_id FROM LastAddedMeshes WHERE user_id = ?");
+        q.addBindValue(userId);
+        if(!q.exec())
+            qDebug() << "DBWorker::meshes: ошибка при нахождении последних добавленных сеток";
+        else
+        {
+            while(q.next())
+            {
+                int meshId = q.value(0).toInt();
+                QString mesh = this->getMeshById(meshId);
+                lastAddedMeshes.push_front(mesh);
+            }
+        }
+    }
+
+    QStringList otherMeshes;
+
     q.prepare("SELECT mesh FROM Meshes ORDER BY mesh");
     q.exec();
     while(q.next())
-        list.push_back(q.value(0).toString());
-    return list;
+    {
+        QString mesh = q.value(0).toString();
+        if(userId > 0)
+        {
+            if(!lastAddedMeshes.contains(mesh))
+                otherMeshes.push_back(mesh);
+        }
+        else
+            otherMeshes.push_back(mesh);
+    }
+    if(userId > 0)
+        return lastAddedMeshes << otherMeshes;
+    return  otherMeshes;
 }
 
 QStringList DBWorker::fixationTypes()

@@ -13,7 +13,9 @@ ColumnLayout{
     property alias analgesicsCheckBox: analgesicsCheckBox
     property alias analgesicsDaysField: analgesicsDaysField
     property alias analgesicsOrallyCheckBox: analgesicsOrallyCheckBox
+    property alias analgesicsOrallyDaysField: analgesicsOrallyDaysField
     property alias analgesicsInjectionsCheckBox: analgesicsInjectionsCheckBox
+    property alias analgesicsInjectionsDaysField: analgesicsInjectionsDaysField
 
 
     function isReady()
@@ -24,6 +26,8 @@ ColumnLayout{
         {
             if(analgesicsDaysField.isEmpty()) return false;
             if(!analgesicsInjectionsCheckBox.checked && !analgesicsOrallyCheckBox.checked) return false;
+            if(analgesicsOrallyCheckBox.checked && analgesicsOrallyDaysField.isEmpty()) return false;
+            if(analgesicsInjectionsCheckBox.checked && analgesicsInjectionsDaysField.isEmpty()) return false;
         }
         return true;
     }
@@ -36,7 +40,31 @@ ColumnLayout{
         analgesicsCheckBox.checked = false;
         analgesicsDaysField.reset();
         analgesicsOrallyCheckBox.checked = false;
+        analgesicsOrallyDaysField.reset();
         analgesicsInjectionsCheckBox.checked = false;
+        analgesicsInjectionsDaysField.reset();
+    }
+
+    function checkOrallyDaysField()
+    {
+        if(!myFunctions.checkNum(analgesicsOrallyDaysField.field.text, false))
+        {
+            analgesicsOrallyDaysField.setIncorrectState("Укажите число корректно!");
+            return false;
+        }
+        analgesicsOrallyDaysField.setNormalState();
+        return true;
+    }
+
+    function checkInjectionsDaysField()
+    {
+        if(!myFunctions.checkNum(analgesicsInjectionsDaysField.field.text, false))
+        {
+            analgesicsInjectionsDaysField.setIncorrectState("Укажите число корректно!");
+            return false;
+        }
+        analgesicsInjectionsDaysField.setNormalState();
+        return true;
     }
 
     function checkAnalgesicsDaysField()
@@ -49,6 +77,7 @@ ColumnLayout{
         analgesicsDaysField.setNormalState();
         return true;
     }
+
 
 
     CheckBox{
@@ -96,6 +125,7 @@ ColumnLayout{
                         target: analgesicsLayout
                     }
                 }
+
                 TextFieldWithLabel{
                     id: analgesicsDaysField
                     label.text: "Число дней приема" + Properties.redPointer;
@@ -109,10 +139,26 @@ ColumnLayout{
                     font.pixelSize: 16
                 }
 
+                TextFieldWithLabel{
+                    id: analgesicsOrallyDaysField
+                    visible: analgesicsOrallyCheckBox.checked
+                    label.text: "Число дней приема перорально" + Properties.redPointer;
+                    Layout.minimumWidth: 320
+                    field.implicitHeight: 40
+                }
+
                 CheckBox{
                     id: analgesicsInjectionsCheckBox
                     text: "Инъекции"
                     font.pixelSize: 16
+                }
+
+                TextFieldWithLabel{
+                    id: analgesicsInjectionsDaysField
+                    visible: analgesicsInjectionsCheckBox.checked
+                    label.text: "Число дней приема с помощью инъекций" + Properties.redPointer;
+                    Layout.minimumWidth: 320
+                    field.implicitHeight: 40
                 }
 
             } // конец колонки для анальгетиков

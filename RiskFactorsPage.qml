@@ -55,6 +55,7 @@ Page{
         heartDiseaseCheckBox.checked = false;
         kidneyDiseaseCheckBox.checked = false;
         gastritisCheckBox.checked = false;
+        ulcerCheckBox.checked = false;
         aorticAneurysmCheckBox.checked = false;
         immunosuppressionCheckBox.checked = false;
         coagulopathyCheckBox.checked = false;
@@ -87,6 +88,7 @@ Page{
         heartDiseaseCheckBox.checked = oldInfo.heartDisease;
         kidneyDiseaseCheckBox.checked = oldInfo.kidneyDisease;
         gastritisCheckBox.checked = oldInfo.gastritis;
+        ulcerCheckBox.checked = oldInfo.ulcer;
         aorticAneurysmCheckBox.checked = oldInfo.aorticAneurysm;
         immunosuppressionCheckBox.checked = oldInfo.immunosuppression;
         coagulopathyCheckBox.checked = oldInfo.coagulopathy;
@@ -158,7 +160,7 @@ Page{
         /*Q_INVOKABLE bool insertRiskFactors(int cardId, int occupationId, int sportActivitiesId, int smokingHistoryId,
                            const QString& cigsPerDay, const QString& yearsOfSmoking,
                            bool diabetesI, bool diabetesII, bool hobl, bool hypertension,
-                           bool heartDisease, bool kidneyDisease, bool gastritis, bool aorticAneurysm,
+                           bool heartDisease, bool kidneyDisease, bool gastritis, bool ulcer, bool aorticAneurysm,
                            bool immunosuppression, bool coagulopathy, bool plateletAggregationInhibitors,
                            const QString& otherFactors);*/
 
@@ -174,6 +176,7 @@ Page{
         var heartDisease = heartDiseaseCheckBox.checked;
         var kidneyDisease = kidneyDiseaseCheckBox.checked;
         var gastritis = gastritisCheckBox.checked;
+        var ulcer = ulcerCheckBox.checked;
         var aorticAneurysm = aorticAneurysmCheckBox.checked;
         var immunosuppression = immunosuppressionCheckBox.checked;
         var coagulopathy = coagulopathyCheckBox.checked;
@@ -182,7 +185,7 @@ Page{
 
         return dbWorker.insertRiskFactors(root.cardId, occupationId, sportActivitiesId, smokingHistoryId, cigsPerDay, yearsOfSmoking,
                                           diabetesI, diabetesII, hobl, hypertension, heartDisease, kidneyDisease,
-                                          gastritis, aorticAneurysm, immunosuppression, coagulopathy,
+                                          gastritis, ulcer, aorticAneurysm, immunosuppression, coagulopathy,
                                           plateletAggregationInhibitors, otherFactors);
     }
 
@@ -200,6 +203,7 @@ Page{
         var heartDisease = heartDiseaseCheckBox.checked;
         var kidneyDisease = kidneyDiseaseCheckBox.checked;
         var gastritis = gastritisCheckBox.checked;
+        var ulcer = ulcerCheckBox.checked;
         var aorticAneurysm = aorticAneurysmCheckBox.checked;
         var immunosuppression = immunosuppressionCheckBox.checked;
         var coagulopathy = coagulopathyCheckBox.checked;
@@ -207,7 +211,7 @@ Page{
         var otherFactors = otherFactorsArea.area.text;
         return dbWorker.updateRiskFactors(root.cardId, occupationId, sportActivitiesId, smokingHistoryId, cigsPerDay, yearsOfSmoking,
                                           diabetesI, diabetesII, hobl, hypertension, heartDisease, kidneyDisease,
-                                          gastritis, aorticAneurysm, immunosuppression, coagulopathy,
+                                          gastritis, ulcer, aorticAneurysm, immunosuppression, coagulopathy,
                                           plateletAggregationInhibitors, otherFactors);
     }
 
@@ -309,7 +313,12 @@ Page{
             }
             CheckBox{
                 id: gastritisCheckBox
-                text: "Гастрит / пептическая язва"
+                text: "Гастрит"
+                font.pixelSize: 16
+            }
+            CheckBox{
+                id: ulcerCheckBox
+                text: "Пептическая язва"
                 font.pixelSize: 16
             }
 
@@ -344,7 +353,7 @@ Page{
                 label.text: "Другие факторы риска"
                 Layout.minimumWidth: 320
                 area.implicitHeight: 100
-                rectangle.radius:   cigsPerDayField.field.rectangle.radius;
+                // rectangle.radius:   cigsPerDayField.field.rectangle.radius;
             }
 
             Item{
@@ -361,7 +370,6 @@ Page{
                 color: Properties.buttonColor;
                 hoverColor: Properties.buttonHoverColor;
                 font.pixelSize: Properties.buttonFontPixelSize;
-                rectangle.radius: height / 2
                 enabled: root.formIsReady();
 
                 onClicked: {

@@ -12,19 +12,22 @@ class PatientListElement : public QObject
     Q_PROPERTY(QString sex READ sex NOTIFY sexChanged)
     Q_PROPERTY(QString birthDate READ birthDate NOTIFY birthDateChanged)
     Q_PROPERTY(QString snils READ snils NOTIFY snilsChanged)
+    Q_PROPERTY(QString region READ region NOTIFY regionChanged)
     Q_PROPERTY(bool viewIsAvailable READ viewIsAvailable NOTIFY viewIsAvailableChanged)
     Q_PROPERTY(bool editIsAvailable READ editIsAvailable NOTIFY editIsAvailableChanged)
     Q_PROPERTY(int cardId READ cardId NOTIFY cardIdChanged)
 
 public:
     explicit PatientListElement(int cardId, const QString& fio, const QString &sex, const QString& birthDate,
-                                const QString& snils, bool viewIsAvailable, bool editIsAvailable,
+                                const QString& snils, const QString& region,
+                                bool viewIsAvailable, bool editIsAvailable,
                                 QObject *parent = nullptr);
 
     const QString& fio() const;
     const QString& sex() const;
     const QString& birthDate() const;
     const QString& snils() const;
+    const QString& region() const;
     bool viewIsAvailable() const;
     bool editIsAvailable() const;
     int cardId() const;
@@ -36,6 +39,7 @@ private:
     QString m_sex;
     QString m_birthDate;
     QString m_snils;
+    QString m_region;
     bool m_viewIsAvailable;
     bool m_editIsAvailable;
     int m_cardId;
@@ -45,6 +49,7 @@ signals:
     void sexChanged();
     void birthDateChanged();
     void snilsChanged();
+    void regionChanged();
     void viewIsAvailableChanged();
     void editIsAvailableChanged();
     void cardIdChanged();

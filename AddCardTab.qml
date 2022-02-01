@@ -52,8 +52,8 @@ Item{
         if(snilsField.field.text.length < Properties.snilsLength) return false;
         if(!polisTypeGroupBox.isSelected()) return false;
         if(polisField.field.text.length < Properties.polisLength) return false;
-        if(!bloodTypeGroupBox.isSelected()) return false;
-        if(!rhesusGroupBox.isSelected()) return false;
+        // if(!bloodTypeGroupBox.isSelected()) return false;
+        // if(!rhesusGroupBox.isSelected()) return false;
         if(weightField.field.text == "") return false;
         if(heightField.field.text == "") return false;
         return true;
@@ -307,8 +307,8 @@ Item{
         var polisType = omsRadioButton.checked ? "ОМС" : "ДМС";
         var polisNumber = polisField.field.text;
         var bloodType = group1RadioButton.checked ? "I" : group2RadioButton.checked ? "II" :
-                        group3RadioButton.checked ? "III" : "IV";
-        var rhesus = rhPlusRadioButton.checked ? "Rh+" : "Rh-";
+                        group3RadioButton.checked ? "III" : group4RadioButton.checked ? "IV" : "";
+        var rhesus = rhPlusRadioButton.checked ? "Rh+" : rhMinusRadioButton.checked ? "Rh-" : "";
         var weight = weightField.field.text;
         var height_ = heightField.field.text;
         var complaints = complaintsArea.area.text;
@@ -433,7 +433,7 @@ Item{
                 field.inputMask: Properties.phoneInputMask;
             }
 
-            ComboBoxWithLabel{
+            SearchComboBoxWithLabel{
                 id: regionComboBox
                 label.text: "Регион" + Properties.redPointer;
                 Layout.minimumWidth: 320
@@ -550,7 +550,7 @@ Item{
                 Layout.fillWidth: true
                 Layout.minimumWidth: 320
                 Layout.maximumWidth: 450
-                title: "Группа крови" + Properties.redPointer;
+                title: "Группа крови";
                 function isSelected()
                 {
                     return ((group1RadioButton.checked) || (group2RadioButton.checked) ||
@@ -600,7 +600,7 @@ Item{
                 Layout.fillWidth: true
                 Layout.minimumWidth: 320
                 Layout.maximumWidth: 450
-                title: "Резус фактор" + Properties.redPointer;
+                title: "Резус фактор";
                 function isSelected()
                 {
                     return((rhPlusRadioButton.checked) ||(rhMinusRadioButton.checked));
@@ -651,7 +651,6 @@ Item{
                 Layout.minimumWidth: 320
                 Layout.maximumWidth: 450
                 area.implicitHeight: 100
-                rectangle.radius:   nameField.field.rectangle.radius;
             }
 
             Item{
@@ -668,7 +667,6 @@ Item{
                 color: Properties.buttonColor;
                 hoverColor: Properties.buttonHoverColor;
                 font.pixelSize: Properties.buttonFontPixelSize;
-                rectangle.radius: height / 2
                 enabled: root.cardIsReady();
 
                 onClicked: {

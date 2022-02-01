@@ -34,6 +34,7 @@ Page{
     function formIsReady() // проверяет, все ли поля заполнены
     {
         if(fioField.field.text == "") return false;
+        if(regionComboBox.comboBox.currentIndex === -1) return false;
         if(experienceField.field.text == "") return false;
         if(localityField.field.text == "") return false;
         if(mainWorkField.field.text == "") return false;
@@ -347,7 +348,7 @@ Page{
                     field.implicitHeight: 40
                 }
 
-                ComboBoxWithLabel{
+                SearchComboBoxWithLabel{
                     id: regionComboBox
                     label.text: "Регион"
                     Layout.alignment: Qt.AlignCenter
@@ -464,7 +465,6 @@ Page{
                     color: Properties.buttonColor;
                     hoverColor: Properties.buttonHoverColor;
                     font.pixelSize: Properties.buttonFontPixelSize;
-                    rectangle.radius: height / 2
                     enabled: root.formIsReady();
 
                     onClicked: {

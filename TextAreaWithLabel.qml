@@ -39,6 +39,7 @@ ColumnLayout{
                 id: rect
                 border.color: area.highlight ? "red" : rect.color;
                 border.width: area.highlight ? 2 : 0;
+                radius: 5
             }
             implicitHeight: 100
         }

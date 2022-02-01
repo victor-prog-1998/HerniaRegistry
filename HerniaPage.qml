@@ -8,16 +8,19 @@ Page{
 
     id: root
     property int cardId: 0
+    property int userId: 0
     property int editHerniaId: 0      // id редактируемой грыжи
     property bool editMode: false
+    property bool meshChanged: false // флаг, который говорит о том, что в режиме редактирования была изменена сетка
+
     signal exitClicked();
     signal finished();
     signal editingFinished();
 
     onVisibleChanged: {
-        if(!visible) // обновляем комбобоксы, так как возможно, что в базу были внесены новые типы сеток/фиксаций/такеров
+        if(visible) // обновляем комбобоксы, так как возможно, что в базу были внесены новые типы сеток/фиксаций/такеров
         {
-            meshesComboBox.comboBox.model = dbWorker.meshes();
+            meshesComboBox.comboBox.model = dbWorker.meshes(userId);
             fixationTypeComboBox.comboBox.model = dbWorker.fixationTypes();
             tuckersComboBox.comboBox.model = dbWorker.tuckers();
         }
@@ -38,6 +41,8 @@ Page{
                 root.reset();
                 exitClicked();
             }
+
+
         }
         Text{
             font.pixelSize: 18
@@ -61,6 +66,7 @@ Page{
             var herniaInfo = dbWorker.getHerniaInfo(editHerniaId);
 
             herniaTypeComboBox.comboBox.currentIndex = herniaTypeComboBox.comboBox.find(herniaInfo.herniaType);
+
             // Если грыжа вентральная
             if(herniaInfo.ventralHerniaType !== "")
             {
@@ -187,7 +193,9 @@ Page{
                 {
                     meshImplantRepairTechniqueComboBox.comboBox.currentIndex =
                             meshImplantRepairTechniqueComboBox.comboBox.find(herniaInfo.operationTechnique);
-                    meshesComboBox.comboBox.currentIndex = meshesComboBox.comboBox.find(herniaInfo.mesh);
+
+                    // meshesComboBox.comboBox.currentIndex = meshesComboBox.comboBox.find(herniaInfo.mesh);
+                    meshesComboBox.comboBox.setIndex(meshesComboBox.comboBox.find(herniaInfo.mesh))
                     meshWidthField.field.text = herniaInfo.meshWidth;
                     meshLengthField.field.text = herniaInfo.meshLength;
 
@@ -245,7 +253,8 @@ Page{
 
                 for(var i = 0; i < 3; ++i)
                 {
-                    var earlyPainLayout = (i == 0) ? earlyPainAfter1Day : (i == 1) ? earlyPainAfter3Days : earlyPainAfter7Days;
+                    var earlyPainLayout = (i === 0) ? earlyPainAfter1Day :
+                                                      (i === 1) ? earlyPainAfter3Days : earlyPainAfter7Days;
                     if(herniaInfo.earlyInRestPain[i] || herniaInfo.earlyInMotionPain[i])
                     {
                         earlyPainLayout.checkBox.checked = true;
@@ -264,7 +273,10 @@ Page{
                             earlyPainLayout.analgesicsCheckBox.checked = true;
                             earlyPainLayout.analgesicsDaysField.field.text = herniaInfo.earlyPainAnalgesicsDays[i];
                             earlyPainLayout.analgesicsOrallyCheckBox.checked = herniaInfo.earlyPainAnalgesicsOrally[i];
+                            earlyPainLayout.analgesicsOrallyDaysField.field.text = herniaInfo.earlyPainAnalgesicsOrallyDays[i];
                             earlyPainLayout.analgesicsInjectionsCheckBox.checked = herniaInfo.earlyPainAnalgesicsInjections[i];
+                            earlyPainLayout.analgesicsInjectionsDaysField.field.text =
+                                    herniaInfo.earlyPainAnalgesicsInjectionsDays[i];
                         }
                     }
                 }
@@ -315,6 +327,11 @@ Page{
 
         dbWorker.deleteHerniaRecords(root.editHerniaId);
         dbWorker.changeHerniaId(tmpHerniaId, root.editHerniaId);
+
+        // в случае, если при редактировании сетка была изменена
+
+
+
 
 
         return true;
@@ -525,13 +542,21 @@ Page{
                     return 0;
                 }
 
+                if(root.editHerniaId)
+                {
+                    if(root.meshChanged || anotherMeshCheckBox.checked)
+                        dbWorker.addMeshToLastAdded(userId, mesh);
+                }
 
+                else
+                    dbWorker.addMeshToLastAdded(userId, mesh);
 
             }
 
             /*Q_INVOKABLE bool insertEarlyPostOperativePain(int herniaId, int daysAfterOperation, int painInRest, int painInMotion,
-                                              bool analgesics, const QString& daysOfMedication,
-                                              bool orally, bool injections);*/
+                                                  bool analgesics, const QString& analgesicsDays,
+                                                  bool orally, const QString& orallyDays,
+                                                  bool injections, const QString& injectionsDays);*/
 
 
             // Ранняя боль - 1 сутки
@@ -544,10 +569,21 @@ Page{
                             earlyPainAfter1Day.analgesicsDaysField.field.text : "";
                 var orally1 = earlyPainAfter1Day.analgesicsCheckBox.checked ?
                             earlyPainAfter1Day.analgesicsOrallyCheckBox.checked : false;
+
+                var orallyDays1 = (earlyPainAfter1Day.analgesicsCheckBox.checked &&
+                        earlyPainAfter1Day.analgesicsOrallyCheckBox.checked) ?
+                            earlyPainAfter1Day.analgesicsOrallyDaysField.field.text : "";
+
                 var injections1 = earlyPainAfter1Day.analgesicsCheckBox.checked ?
                             earlyPainAfter1Day.analgesicsInjectionsCheckBox.checked : false;
+
+                var injectionsDays1 = (earlyPainAfter1Day.analgesicsCheckBox.checked &&
+                        earlyPainAfter1Day.analgesicsInjectionsCheckBox.checked) ?
+                            earlyPainAfter1Day.analgesicsInjectionsDaysField.field.text : "";
+
                 if(!dbWorker.insertEarlyPostOperativePain(herniaId, 1, inRest1, inMotion1, analgesics1,
-                                                          daysOfMedication1, orally1, injections1))
+                                                          daysOfMedication1, orally1, orallyDays1,
+                                                          injections1, injectionsDays1))
                 {
                     dbWorker.deleteHerniaRecords(herniaId);
                     return 0;
@@ -564,10 +600,23 @@ Page{
                             earlyPainAfter3Days.analgesicsDaysField.field.text : "";
                 var orally3 = earlyPainAfter3Days.analgesicsCheckBox.checked ?
                             earlyPainAfter3Days.analgesicsOrallyCheckBox.checked : false;
+
+                var orallyDays3 = (earlyPainAfter3Days.analgesicsCheckBox.checked &&
+                        earlyPainAfter3Days.analgesicsOrallyCheckBox.checked) ?
+                            earlyPainAfter3Days.analgesicsOrallyDaysField.field.text : "";
+
+
                 var injections3 = earlyPainAfter3Days.analgesicsCheckBox.checked ?
                             earlyPainAfter3Days.analgesicsInjectionsCheckBox.checked : false;
+
+                var injectionsDays3 = (earlyPainAfter3Days.analgesicsCheckBox.checked &&
+                        earlyPainAfter3Days.analgesicsInjectionsCheckBox.checked) ?
+                            earlyPainAfter3Days.analgesicsInjectionsDaysField.field.text : "";
+
+
                 if(!dbWorker.insertEarlyPostOperativePain(herniaId, 3, inRest3, inMotion3, analgesics3,
-                                                          daysOfMedication3, orally3, injections3))
+                                                          daysOfMedication3, orally3, orallyDays3,
+                                                          injections3, injectionsDays3))
                 {
                     dbWorker.deleteHerniaRecords(herniaId);
                     return 0;
@@ -584,10 +633,23 @@ Page{
                             earlyPainAfter7Days.analgesicsDaysField.field.text : "";
                 var orally7 = earlyPainAfter7Days.analgesicsCheckBox.checked ?
                             earlyPainAfter7Days.analgesicsOrallyCheckBox.checked : false;
+
+                var orallyDays7 = (earlyPainAfter7Days.analgesicsCheckBox.checked &&
+                        earlyPainAfter7Days.analgesicsOrallyCheckBox.checked) ?
+                            earlyPainAfter7Days.analgesicsOrallyDaysField.field.text : "";
+
+
                 var injections7 = earlyPainAfter7Days.analgesicsCheckBox.checked ?
                             earlyPainAfter7Days.analgesicsInjectionsCheckBox.checked : false;
+
+                var injectionsDays7 = (earlyPainAfter7Days.analgesicsCheckBox.checked &&
+                        earlyPainAfter7Days.analgesicsInjectionsCheckBox.checked) ?
+                            earlyPainAfter7Days.analgesicsInjectionsDaysField.field.text : "";
+
+
                 if(!dbWorker.insertEarlyPostOperativePain(herniaId, 7, inRest7, inMotion7, analgesics7,
-                                                          daysOfMedication7, orally7, injections7))
+                                                          daysOfMedication7, orally7, orallyDays7,
+                                                          injections7, injectionsDays7))
                 {
                     dbWorker.deleteHerniaRecords(herniaId);
                     return 0;
@@ -847,6 +909,7 @@ Page{
         imageLoader.reset();
 
         root.cardId = 0;
+        root.userId = 0;
         root.editHerniaId = 0;
         root.editMode = false;
     }
@@ -975,14 +1038,55 @@ Page{
                 anotherTuckersField.setNormalState();
         }
 
-        if(earlyPainAfter1Day.analgesicsDaysField.visible && !earlyPainAfter1Day.analgesicsDaysField.isEmpty())
-            if(!earlyPainAfter1Day.checkAnalgesicsDaysField()) ok = false;
 
-        if(earlyPainAfter3Days.analgesicsDaysField.visible && !earlyPainAfter3Days.analgesicsDaysField.isEmpty())
-            if(!earlyPainAfter3Days.checkAnalgesicsDaysField()) ok = false;
+        if(earlyPainAfter1Day.analgesicsCheckBox.checked)
+        {
+            if(!earlyPainAfter1Day.analgesicsDaysField.isEmpty())
+                if(!earlyPainAfter1Day.checkAnalgesicsDaysField()) ok = false;
+            if(earlyPainAfter1Day.analgesicsOrallyCheckBox.checked)
+            {
+                if(!earlyPainAfter1Day.analgesicsOrallyDaysField.isEmpty())
+                    if(!earlyPainAfter1Day.checkOrallyDaysField()) ok = false;
+            }
+            if(earlyPainAfter1Day.analgesicsInjectionsCheckBox.checked)
+            {
+                if(!earlyPainAfter1Day.analgesicsInjectionsDaysField.isEmpty())
+                    if(!earlyPainAfter1Day.checkInjectionsDaysField()) ok = false;
+            }
+        }
 
-        if(earlyPainAfter7Days.analgesicsDaysField.visible && !earlyPainAfter7Days.analgesicsDaysField.isEmpty())
-            if(!earlyPainAfter7Days.checkAnalgesicsDaysField()) ok = false;
+        if(earlyPainAfter3Days.analgesicsCheckBox.checked)
+        {
+            if(!earlyPainAfter3Days.analgesicsDaysField.isEmpty())
+                if(!earlyPainAfter3Days.checkAnalgesicsDaysField()) ok = false;
+            if(earlyPainAfter3Days.analgesicsOrallyCheckBox.checked)
+            {
+                if(!earlyPainAfter3Days.analgesicsOrallyDaysField.isEmpty())
+                    if(!earlyPainAfter3Days.checkOrallyDaysField()) ok = false;
+            }
+            if(earlyPainAfter3Days.analgesicsInjectionsCheckBox.checked)
+            {
+                if(!earlyPainAfter3Days.analgesicsInjectionsDaysField.isEmpty())
+                    if(!earlyPainAfter3Days.checkInjectionsDaysField()) ok = false;
+            }
+        }
+
+        if(earlyPainAfter7Days.analgesicsCheckBox.checked)
+        {
+            if(!earlyPainAfter7Days.analgesicsDaysField.isEmpty())
+                if(!earlyPainAfter7Days.checkAnalgesicsDaysField()) ok = false;
+            if(earlyPainAfter7Days.analgesicsOrallyCheckBox.checked)
+            {
+                if(!earlyPainAfter7Days.analgesicsOrallyDaysField.isEmpty())
+                    if(!earlyPainAfter7Days.checkOrallyDaysField()) ok = false;
+            }
+            if(earlyPainAfter7Days.analgesicsInjectionsCheckBox.checked)
+            {
+                if(!earlyPainAfter7Days.analgesicsInjectionsDaysField.isEmpty())
+                    if(!earlyPainAfter7Days.checkInjectionsDaysField()) ok = false;
+            }
+        }
+
 
         return ok;
 
@@ -1305,21 +1409,35 @@ Page{
                         label.text: "Техника ненатяжного способа" + Properties.redPointer;
                         Layout.minimumWidth: 320
                         comboBox.model: dbWorker.meshImplantRepairTechniques();
+                        comboBox.onCurrentTextChanged: {
+                            if(comboBox.currentText === "Lichtenstein")
+                            {
+                                meshFixationCheckBox.checked = true;
+                                meshFixationCheckBox.visible = false;
+                            }
+                            else
+                            {
+                                meshFixationCheckBox.visible = true;
+                            }
+                        }
                     }
 
-                    ComboBoxWithLabel{
+                    SearchComboBoxWithLabel{
                         id: meshesComboBox
                         label.text: "Тип сетки" + Properties.redPointer;
                         Layout.minimumWidth: 320
-                        comboBox.model: dbWorker.meshes();
+                        comboBox.model: dbWorker.meshes(userId);
                         enabled: !anotherMeshCheckBox.checked
+                        comboBox.onSelected: if(root.editMode) root.meshChanged = true;
                     }
+
 
                     CheckBox{
                         id: anotherMeshCheckBox
                         text: "Другой тип сетки"
                         font.pixelSize: 16
                     }
+
 
                     TextFieldWithLabel{
                         id: anotherMeshField
@@ -1353,6 +1471,7 @@ Page{
                         id: meshFixationCheckBox
                         text: "Сетка была фиксирована"
                         font.pixelSize: 16
+
                     }
 
                     ColumnLayout{           // для фиксации
@@ -1704,7 +1823,6 @@ Page{
                 color: Properties.buttonColor;
                 hoverColor: Properties.buttonHoverColor;
                 font.pixelSize: Properties.buttonFontPixelSize;
-                rectangle.radius: height / 2
                 enabled: root.formIsReady();
                 onClicked: {
                     if(root.checkFields())

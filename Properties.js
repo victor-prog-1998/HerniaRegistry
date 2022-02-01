@@ -1,7 +1,9 @@
-var buttonColor = "#8db3f0";
-var buttonHoverColor = "#6d96d6";
+var buttonColor = "#6fb1fc";
+var buttonHoverColor = "#488cd9";
 var buttonFontPixelSize = 18;
 var groupBoxFrameColor = "#bbbebb"
+
+var roundnessRaduis = 5;
 
 
 var redPointer = "<font color=\"red\"> *</font>"

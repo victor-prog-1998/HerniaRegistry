@@ -108,7 +108,10 @@ void HerniaInfo::setLatePostoperativeComplicationsInfo(bool fistulas, bool meshR
 void HerniaInfo::setEarlyPainInfo(const QList<bool> &inRest, const QList<int> &inRestDegree,
                                   const QList<bool> &inMotion, const QList<int> &inMotionDegree,
                                   const QList<bool> &analgesics, const QList<int> &analgesicsDays,
-                                  const QList<bool> &analgesicsOrally, const QList<bool> &analgesicsInjections)
+                                  const QList<bool> &analgesicsOrally,
+                                  const QList<int> &orallyDays,
+                                  const QList<bool> &analgesicsInjections,
+                                  const QList<int> &injectionsDays)
 {
     this->m_earlyPain = true;
     this->m_earlyInRestPain = inRest;
@@ -118,7 +121,9 @@ void HerniaInfo::setEarlyPainInfo(const QList<bool> &inRest, const QList<int> &i
     this->m_earlyPainAnalgesics = analgesics;
     this->m_earlyPainAnalgesicsDays = analgesicsDays;
     this->m_earlyPainAnalgesicsOrally = analgesicsOrally;
+    this->m_earlyPainAnalgesicsOrallyDays = orallyDays;
     this->m_earlyPainAnalgesicsInjections = analgesicsInjections;
+    this->m_earlyPainAnalgesicsInjectionsDays = injectionsDays;
 }
 
 void HerniaInfo::setChronicInRestPainInfo(int degree)
@@ -429,10 +434,21 @@ const QList<bool>& HerniaInfo::earlyPainAnalgesics() const
     return this->m_earlyPainAnalgesics;
 }
 
-const QList<int>& HerniaInfo::earlyPainAnalgesicsDays() const
+const QList<int> &HerniaInfo::earlyPainAnalgesicsDays() const
 {
     return this->m_earlyPainAnalgesicsDays;
 }
+
+const QList<int>& HerniaInfo::earlyPainAnalgesicsInjectionsDays() const
+{
+    return this->m_earlyPainAnalgesicsInjectionsDays;
+}
+
+const QList<int>& HerniaInfo::earlyPainAnalgesicsOrallyDays() const
+{
+    return this->m_earlyPainAnalgesicsOrallyDays;
+}
+
 
 const QList<bool>& HerniaInfo::earlyPainAnalgesicsOrally() const
 {

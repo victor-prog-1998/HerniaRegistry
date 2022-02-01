@@ -48,7 +48,7 @@ Page{
             birthDateInput.setDate(mainInfo.birthDate);
             (mainInfo.sex === "М") ? (maleRadioButton.checked = true) : (femaleRadioButton.checked = true);
             phoneField.field.text = mainInfo.phone;
-            regionComboBox.comboBox.currentIndex = mainInfo.regionId - 1;
+            regionComboBox.comboBox.setIndex(mainInfo.regionId - 1);
             districtField.field.text = mainInfo.district;
             localityField.field.text = mainInfo.locality;
             streetField.field.text = mainInfo.street;
@@ -59,10 +59,23 @@ Page{
             originalPolisType = mainInfo.polisType;
             (mainInfo.polisType === "ОМС") ? (omsRadioButton.checked = true) : (dmsRadioButton.checked = true);
             polisField.field.text = root.originalPolisNumber = mainInfo.polisNumber;
-            (mainInfo.bloodType === "I") ? (group1RadioButton.checked = true) : (mainInfo.bloodType === "II") ?
-                                               (group2RadioButton.checked = true) : (mainInfo.bloodType === "III") ?
-                                                   (group3RadioButton.checked = true) : (group4RadioButton.checked = true);
-            (mainInfo.rhesusFactor === "+") ? (rhPlusRadioButton.checked = true) : (rhMinusRadioButton.checked = true);
+
+
+            if(mainInfo.bloodType === "I")
+                group1RadioButton.checked = true;
+            else if(mainInfo.bloodType === "II")
+                group2RadioButton.checked = true;
+            else if(mainInfo.bloodType === "III")
+                group3RadioButton.checked = true;
+            else if(mainInfo.bloodType === "IV")
+                group4RadioButton.checked = true;
+
+            if(mainInfo.rhesusFactor === "+")
+                rhPlusRadioButton.checked = true;
+            else if(mainInfo.rhesusFactor === "-")
+                rhMinusRadioButton.checked = true;
+            // если строка пуста, ничего не делаем, так как оба RadioButton уже сброшены в 0
+
             weightField.field.text = mainInfo.weight;
             heightField.field.text = mainInfo.height;
             complaintsArea.area.text = mainInfo.complaints;
@@ -138,8 +151,8 @@ Page{
         if(snilsField.field.text.length < Properties.snilsLength) return false;
         if(!polisTypeGroupBox.isSelected()) return false;
         if(polisField.field.text.length < Properties.polisLength) return false;
-        if(!bloodTypeGroupBox.isSelected()) return false;
-        if(!rhesusGroupBox.isSelected()) return false;
+        // if(!bloodTypeGroupBox.isSelected()) return false;
+        // if(!rhesusGroupBox.isSelected()) return false;
         if(weightField.field.text == "") return false;
         if(heightField.field.text == "") return false;
         return true;
@@ -391,8 +404,8 @@ Page{
         var polisType = omsRadioButton.checked ? "ОМС" : "ДМС";
         var polisNumber = polisField.field.text;
         var bloodType = group1RadioButton.checked ? "I" : group2RadioButton.checked ? "II" :
-                        group3RadioButton.checked ? "III" : "IV";
-        var rhesus = rhPlusRadioButton.checked ? "Rh+" : "Rh-";
+                        group3RadioButton.checked ? "III" : group4RadioButton.checked ? "IV" : "";
+        var rhesus = rhPlusRadioButton.checked ? "Rh+" : rhMinusRadioButton.checked ? "Rh-" : "";
         var weight = weightField.field.text;
         var height_ = heightField.field.text;
         var complaints = complaintsArea.area.text;
@@ -509,7 +522,7 @@ Page{
                 field.inputMask: Properties.phoneInputMask;
             }
 
-            ComboBoxWithLabel{
+            SearchComboBoxWithLabel{
                 id: regionComboBox
                 label.text: "Регион" + Properties.redPointer;
                 Layout.minimumWidth: 320
@@ -626,7 +639,7 @@ Page{
                 Layout.fillWidth: true
                 Layout.minimumWidth: 320
                 Layout.maximumWidth: 450
-                title: "Группа крови" + Properties.redPointer;
+                title: "Группа крови";
                 function isSelected()
                 {
                     return ((group1RadioButton.checked) || (group2RadioButton.checked) ||
@@ -676,7 +689,7 @@ Page{
                 Layout.fillWidth: true
                 Layout.minimumWidth: 320
                 Layout.maximumWidth: 450
-                title: "Резус фактор" + Properties.redPointer;
+                title: "Резус фактор";
                 function isSelected()
                 {
                     return((rhPlusRadioButton.checked) ||(rhMinusRadioButton.checked));
@@ -727,7 +740,6 @@ Page{
                 Layout.minimumWidth: 320
                 Layout.maximumWidth: 450
                 area.implicitHeight: 100
-                rectangle.radius:   nameField.field.rectangle.radius;
 
             }
 
@@ -745,7 +757,6 @@ Page{
                 color: Properties.buttonColor;
                 hoverColor: Properties.buttonHoverColor;
                 font.pixelSize: Properties.buttonFontPixelSize;
-                rectangle.radius: height / 2
                 enabled: root.cardIsReady();
 
                 onClicked: {

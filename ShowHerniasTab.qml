@@ -49,9 +49,9 @@ Item {
             color: Properties.buttonColor;
             hoverColor: Properties.buttonHoverColor;
             font.pixelSize: Properties.buttonFontPixelSize;
-            rectangle.radius: height / 2
             visible: root.editIsAvailable
             onClicked: addHerniaClicked()
+
         }
     }
 
@@ -69,7 +69,7 @@ Item {
         delegate: HerniaListDelegate{
             width: parent.width
             onOpenButtonClicked: {
-                programRoot.openViewHerniaPage(herniaId, root.editIsAvailable, root.cardId);
+                programRoot.openViewHerniaPage(herniaId, root.editIsAvailable, root.cardId, root.userId);
             }
         }
     }

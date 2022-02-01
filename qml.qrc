@@ -59,5 +59,9 @@
         <file>EarlyPostOperativePainLayout.qml</file>
         <file>HerniaListDelegate.qml</file>
         <file>ViewHerniaPage.qml</file>
+        <file>SearchComboBox.qml</file>
+        <file>ListPopup.qml</file>
+        <file>SearchComboBoxWithLabel.qml</file>
+        <file>icons/combo-box-indicator.png</file>
     </qresource>
 </RCC>

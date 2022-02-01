@@ -93,7 +93,6 @@ Rectangle{
                 color: "#ff776e"
                 hoverColor: "#f55b51"
                 font.pixelSize: 16
-                rectangle.radius: 10
                 rectangle.implicitHeight: 30
                 Layout.minimumWidth: 130
                 onClicked: rejected(dbWorker.rejectRequest(modelData.doctorId));
@@ -103,7 +102,6 @@ Rectangle{
                 color: "#61ff6e"
                 hoverColor: "#48db54"
                 font.pixelSize: 16
-                rectangle.radius: 10
                 rectangle.implicitHeight: 30
                 Layout.minimumWidth: 130
                 onClicked: accepted(dbWorker.acceptRequest(modelData.doctorId));

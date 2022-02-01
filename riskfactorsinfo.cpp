@@ -3,15 +3,29 @@
 RiskFactorsInfo::RiskFactorsInfo(int occupationId, int sportActivitiesId, int smokingHistoryId,
                                  int cigsPerDay, int yearsOfSmoking, bool diabetesI, bool diabetesII,
                                  bool hobl, bool hypertension, bool heartDisease, bool kidneyDisease,
-                                 bool gastritis, bool aorticAneurysm,
+                                 bool gastritis, bool ulcer, bool aorticAneurysm,
                                  bool immunosuppression, bool coagulopathy,
                                  bool plateletAggregationInhibitors,
                                  const QString& otherFactors, QObject *parent) :
-    QObject(parent), m_occupationId(occupationId), m_sportActivitiesId(sportActivitiesId), m_smokingHistoryId(smokingHistoryId),
-    m_cigsPerDay(cigsPerDay), m_yearsOfSmoking(yearsOfSmoking), m_diabetesI(diabetesI), m_diabetesII(diabetesII),
-    m_hobl(hobl), m_hypertension(hypertension), m_heartDisease(heartDisease), m_kidneyDisease(kidneyDisease),
-    m_gastritis(gastritis), m_aorticAneurysm(aorticAneurysm), m_immunosuppression(immunosuppression),
-    m_coagulopathy(coagulopathy), m_plateletAggregationInhibitors(plateletAggregationInhibitors), m_otherFactors(otherFactors)
+    QObject(parent),
+    m_occupationId(occupationId),
+    m_sportActivitiesId(sportActivitiesId),
+    m_smokingHistoryId(smokingHistoryId),
+    m_cigsPerDay(cigsPerDay),
+    m_yearsOfSmoking(yearsOfSmoking),
+    m_diabetesI(diabetesI),
+    m_diabetesII(diabetesII),
+    m_hobl(hobl),
+    m_hypertension(hypertension),
+    m_heartDisease(heartDisease),
+    m_kidneyDisease(kidneyDisease),
+    m_gastritis(gastritis),
+    m_ulcer(ulcer),
+    m_aorticAneurysm(aorticAneurysm),
+    m_immunosuppression(immunosuppression),
+    m_coagulopathy(coagulopathy),
+    m_plateletAggregationInhibitors(plateletAggregationInhibitors),
+    m_otherFactors(otherFactors)
 {
 
 }
@@ -74,6 +88,11 @@ bool RiskFactorsInfo::kidneyDisease()const
 bool RiskFactorsInfo::gastritis()const
 {
     return this->m_gastritis;
+}
+
+bool RiskFactorsInfo::ulcer() const
+{
+    return this->m_ulcer;
 }
 
 bool RiskFactorsInfo::aorticAneurysm()const

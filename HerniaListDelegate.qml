@@ -107,7 +107,6 @@ Rectangle{
         text: "Открыть"
         height: 30
         width: 100
-        rectangle.radius: 5
         color: "#1eff00"
         hoverColor: "#19d600"
         onClicked: root.openButtonClicked(modelData.herniaId)

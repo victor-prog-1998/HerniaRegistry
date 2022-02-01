@@ -15,9 +15,8 @@ public:
     const QByteArray& getByteArray(const QString& source);
 
 private:
-    QHash<QString, QImage> m_imagesHash;   // хеш таблица из пар "id - изображение" (id - это название)
+    QHash<QString, QImage> m_imagesHash;   // хеш таблица из пар "id - изображение" (id - это его название в url)
     QHash<QString, QByteArray> m_byteArraysHash;
-
 };
 
 #endif // IMAGEPROVIDER_H

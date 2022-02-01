@@ -21,7 +21,7 @@ GroupBox{
          height: parent.height -  root.topPadding +  root.bottomPadding
          color: "transparent"
          border.color: Properties.groupBoxFrameColor
-         radius: height / 2
+         radius: Properties.roundnessRaduis
          //antialiasing: false
     }
  }

@@ -43,12 +43,11 @@ public:
 
 
     Q_INVOKABLE bool checkPatientCardFields(const QString& cardNumber, const QString& fio, const QDate& birthDate,
-                                const QString& sex,const QString& phone, const QString& region,
-                                const QString& district,const QString& locality, const QString& street,
+                                const QString& sex, const QString& phone, const QString& region,
+                                const QString& district, const QString& locality, const QString& street,
                                 const QString& house, const QString& flat, const QString& passportSeries,
                                 const QString& passportNumber, const QString& snils, const QString& polisType,
-                                const QString& polisNumber, const QString& bloodType,
-                                const QString& rhesusFactor, const QString& weight,
+                                const QString& polisNumber, const QString& weight,
                                 const QString& height, const QString& complaints);
 
     //*************** работа с датами ************************************

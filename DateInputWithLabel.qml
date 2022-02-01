@@ -4,6 +4,7 @@ import QtQuick 2.9
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 
+import "Properties.js" as Properties
 
 
 
@@ -76,9 +77,9 @@ ColumnLayout{
                 var month = monthComboBox.currentIndex;
                 var year = Number(yearComboBox.currentText);
                 var count;
-                if((month == 3) || (month == 5) || (month == 8) || (month == 10)) // апр, июнь, сент, нояб
+                if((month === 3) || (month === 5) || (month === 8) || (month === 10)) // апр, июнь, сент, нояб
                     count = 30;
-                else if(month == 1) // февраль
+                else if(month === 1) // февраль
                     count = (year % 4) ? 28 : 29;
                 else
                     count = 31;
@@ -121,7 +122,7 @@ ColumnLayout{
             //Layout.fillHeight: true
             font.pixelSize: 18
             background: Rectangle{
-                radius: height / 2
+                radius: Properties.roundnessRaduis
             }
         }
 
@@ -137,7 +138,7 @@ ColumnLayout{
             //Layout.fillHeight: true
             font.pixelSize: 18
             background: Rectangle{
-                radius: height / 2
+                radius: Properties.roundnessRaduis
             }
         }
 
@@ -162,7 +163,7 @@ ColumnLayout{
             //Layout.fillHeight: true
             font.pixelSize: 18
             background: Rectangle{
-                radius: height / 2
+                radius: Properties.roundnessRaduis
             }
 
         }

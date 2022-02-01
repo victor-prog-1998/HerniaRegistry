@@ -7,6 +7,7 @@ Page{
     id: root
     property int cardId: 0
     property int herniaId: 0
+    property int userId: 0
     property bool editIsAvailable
     signal exitClicked();
 
@@ -255,7 +256,7 @@ Page{
             for(i = 0; i < 3; ++i)
             {
                 var painObj = {};
-                painObj.daysAfterOperation = (i == 0) ? 1 : (i == 1) ? 3 : 7;
+                painObj.daysAfterOperation = (i === 0) ? 1 : (i === 1) ? 3 : 7;
                 painObj.painIsPresent = (herniaInfo.earlyInRestPain[i] || herniaInfo.earlyInMotionPain[i]);
                 painObj.inRest = herniaInfo.earlyInRestPain[i];
                 painObj.inRestDegree = herniaInfo.earlyInRestPainDegree[i];
@@ -264,7 +265,9 @@ Page{
                 painObj.analgesics = herniaInfo.earlyPainAnalgesics[i];
                 painObj.analgesicsDays = herniaInfo.earlyPainAnalgesicsDays[i];
                 painObj.orally = herniaInfo.earlyPainAnalgesicsOrally[i];
+                painObj.orallyDays = herniaInfo.earlyPainAnalgesicsOrallyDays[i];
                 painObj.injections = herniaInfo.earlyPainAnalgesicsInjections[i];
+                painObj.injectionsDays = herniaInfo.earlyPainAnalgesicsInjectionsDays[i];
                 earlyPainModel.append(painObj);
             }
 
@@ -343,6 +346,30 @@ Page{
         imagesModel.clear();
     }
 
+    function getDaysWord(days)
+    {
+        /* 11...19 - дней
+         1 - день
+         2, 3, 4 - дня
+         5, 6, 7, 8, 9, 0 - дней */
+
+        var mod100 = days % 100;
+        if(mod100 >= 11 && mod100 <= 19)
+            return "дней";
+        var mod10 = days % 10;
+        switch(mod10)
+        {
+        case 1:
+            return "день";
+        case 2:
+        case 3:
+        case 4:
+            return "дня";
+        default:
+            return "дней";
+        }
+    }
+
     CustomButton{
         id: editButton
         anchors.top: parent.top
@@ -354,10 +381,9 @@ Page{
         color: Properties.buttonColor;
         hoverColor: Properties.buttonHoverColor;
         font.pixelSize: Properties.buttonFontPixelSize;
-        rectangle.radius: height / 2
         visible: root.editIsAvailable
         onClicked: {
-            programRoot.openEditHerniaPage(herniaId, cardId);
+            programRoot.openEditHerniaPage(herniaId, cardId, userId);
         }
 
     }
@@ -706,15 +732,13 @@ Page{
                                             dataLabel.text: {
                                                 if(analgesics)
                                                 {
-                                                    var str = "Да (дней приёма: " + analgesicsDays + ", ";
-                                                    var x = orally ? "перорально" : "";
+                                                    var str = "Да. Дней приема: " + analgesicsDays + ". ";
+                                                    if(orally)
+                                                        str += "Перорально (" + orallyDays + " " +
+                                                                getDaysWord(orallyDays) + "). ";
                                                     if(injections)
-                                                    {
-                                                        if(x !== "")
-                                                            x += " + ";
-                                                        x += "инъекции";
-                                                    }
-                                                    str += x + ")";
+                                                        str += "Инъекции (" + injectionsDays + " " +
+                                                                getDaysWord(injectionsDays) + "). ";
                                                     return str;
                                                 }
                                                 return "Нет";

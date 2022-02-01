@@ -31,10 +31,15 @@ Item{
         passportField.dataLabel.text = mainInfo.passport;
         snilsField.dataLabel.text = mainInfo.snils;
         polisField.dataLabel.text = polis;
+
+        bloodTypeField.visible = (mainInfo.bloodType !== "");
         bloodTypeField.dataLabel.text = mainInfo.bloodType;
+
+        rhesusFactorField.visible = (mainInfo.rhesusFactor !== "");
         rhesusFactorField.dataLabel.text = mainInfo.rhesusFactor;
-        weightField.dataLabel.text = mainInfo.weight;
-        heightField.dataLabel.text = mainInfo.height;
+
+        weightField.dataLabel.text = mainInfo.weight + " кг";
+        heightField.dataLabel.text = mainInfo.height + " см";
         complaintsField.visible = (mainInfo.complaints !== "");
         complaintsField.dataLabel.text = mainInfo.complaints;
     }
@@ -59,7 +64,6 @@ Item{
         color: Properties.buttonColor;
         hoverColor: Properties.buttonHoverColor;
         font.pixelSize: Properties.buttonFontPixelSize;
-        rectangle.radius: height / 2
         visible: root.editIsAvailable
         onClicked: editClicked(cardId)
     }

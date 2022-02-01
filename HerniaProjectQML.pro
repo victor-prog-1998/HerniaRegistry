@@ -1,4 +1,8 @@
-QT += quick sql qml charts
+QT += quick sql qml charts #windows
+
+#QT += quick sql qml widgets #linux
+
+
 CONFIG += c++11
 
 # The following define makes your compiler emit warnings if you use
@@ -56,4 +60,5 @@ HEADERS += \
     herniainfo.h \
     imageprovider.h
 
-DISTFILES +=
+DISTFILES += \
+    SearchComboBox.qml

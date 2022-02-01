@@ -4,9 +4,9 @@
 
 
 PatientListElement::PatientListElement(int cardId, const QString& fio, const QString& sex, const QString& birthDate,
-                                       const QString& snils, bool viewIsAvailable, bool editIsAvailable,
+                                       const QString& snils, const QString &region, bool viewIsAvailable, bool editIsAvailable,
                                        QObject *parent) :
-    QObject(parent), m_fio(fio), m_snils(snils),
+    QObject(parent), m_fio(fio), m_snils(snils), m_region(region),
     m_viewIsAvailable(viewIsAvailable), m_editIsAvailable(editIsAvailable), m_cardId(cardId)
 {
     m_birthDate = MyFunctions::dateToNormalFormat(birthDate);
@@ -32,6 +32,11 @@ const QString &PatientListElement::birthDate() const
 const QString &PatientListElement::snils() const
 {
     return m_snils;
+}
+
+const QString &PatientListElement::region() const
+{
+    return m_region;
 }
 
 bool PatientListElement::viewIsAvailable() const

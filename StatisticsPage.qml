@@ -72,7 +72,6 @@ Page{
             color: "#f7786f"
             hoverColor: "#e6655c"
             font.pixelSize: Properties.buttonFontPixelSize;
-            rectangle.radius: height / 2
             onClicked: treeViewModel.reset();
         }
 
@@ -91,10 +90,9 @@ Page{
                 Layout.minimumWidth: 100
                 rectangle.implicitHeight: 40
                 text: "Все пациенты"
-                color: "#f0ee6e"
-                hoverColor: "#dedc52"
+                color: "#e3e03d"
+                hoverColor: "#c9c72c"
                 font.pixelSize: Properties.buttonFontPixelSize;
-                rectangle.radius: height / 2
                 onClicked: {
                     var allCards = dbWorker.getAllCardsForStatistics();
                     patientView.model = allCards;
@@ -114,7 +112,6 @@ Page{
                 color: Properties.buttonColor;
                 hoverColor: Properties.buttonHoverColor;
                 font.pixelSize: Properties.buttonFontPixelSize;
-                rectangle.radius: height / 2
                 onClicked: {
                     var strict = searchTypeComboBox.comboBox.currentText == "Поиск \"И\"";
                     var cards = dbWorker.getStatisticsResults(strict);
@@ -153,8 +150,21 @@ Page{
             id: distributionTypeComboBox
             label.text: "Распределение";
             Layout.minimumWidth: 320
-            comboBox.model: ["По полу", "По регионам"]
+            comboBox.model: {
+                var distTypes = [];
+                distTypes.push("По полу");
+                distTypes.push("По регионам");
+                distTypes.push("По способам оперативного лечения");
+                distTypes.push("По техникам натяжных операций");
+                distTypes.push("По техникам ненатяжных операций");
+                distTypes.push("По типам сеток");
+                distTypes.push("По типам фиксации");
+                distTypes.push("По типам такеров");
+                distTypes.push("По операционным осложнениям");
+                return distTypes;
+            }
             comboBox.currentIndex: 0
+
         }
 
         CustomButton{
@@ -168,7 +178,6 @@ Page{
             color: Properties.buttonColor
             hoverColor: Properties.buttonHoverColor
             font.pixelSize: Properties.buttonFontPixelSize;
-            rectangle.radius: height / 2
             enabled: cardIdList.length != 0
             onClicked: {
                 showDistributionClicked(root.cardIdList, distributionTypeComboBox.comboBox.currentText)

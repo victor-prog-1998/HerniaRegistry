@@ -125,6 +125,8 @@ public:
     QString getOperationMethod(int herniaId);
     QString getOperationTechnique(int herniaId);
 
+    QString getMeshById(int id);
+
 
     // Выдача id данных из справочных таблиц
 
@@ -240,7 +242,7 @@ public:
 
     Q_INVOKABLE int getCardIdBySnils(const QString& snils);
 
-    // --- Списки строк из стравочных таблиц ---------------------
+    // --- Списки строк из справочных таблиц ---------------------
     Q_INVOKABLE QStringList regions();
 
     Q_INVOKABLE QStringList herniaTypes();
@@ -256,7 +258,7 @@ public:
 //    Q_INVOKABLE QStringList hernialSacSizes();
     Q_INVOKABLE QStringList tissueRepairTechniques();
     Q_INVOKABLE QStringList meshImplantRepairTechniques();
-    Q_INVOKABLE QStringList meshes();
+    Q_INVOKABLE QStringList meshes(int userId = 0);
     Q_INVOKABLE QStringList fixationTypes();
     Q_INVOKABLE QStringList tuckers();
     Q_INVOKABLE QStringList peritoneumClosures();
@@ -271,16 +273,9 @@ public:
 
 
     //-----------   Inserts ---------------------------------------------------------------
-    //void insertUserSession(int userID, const QDateTime& begin, const QDateTime& end);
     void insertAvailableCard(int userID, int cardID);
 
-//    bool insertPatientCard(const QString& cardNumber, const QString& fio, const QDate& birthDate, const QString& sex,
-//                           const QString& phone, const QString& region, const QString& district,
-//                           const QString& locality, const QString& street, const QString& house, const QString& flat,
-//                           const QString& passportSeries, const QString& passportNumber, const QString& snils,
-//                           const QString& polisType, const QString& polisNumber, const QString& bloodType,
-//                           const QString& rhesusFactor, const QString& weight, const QString& height,
-//                           const QString& complaints, int& id);  OLD
+
     Q_INVOKABLE bool insertPatientCard(int userID, const QString& fio, const QDate& birthDate, const QString& sex,
                            const QString& phone, const QString& region, const QString& district,
                            const QString& locality, const QString& street, const QString& house, const QString& flat,
@@ -291,38 +286,11 @@ public:
 
 
 
-//    bool insertRiskFactors(int cardID, const QString& occupation, const QString& sport, const QString& smoking,
-//                           const QString& cigsPerDay, const QString& yearsOfSmoking, const QString& packsSmoked,
-//                           bool previousOperation, bool chronicImunMed, bool chronicCortisone,
-//                           bool abdominalAneurysm, bool anticoagTherapy, const QString& sortOfTherapy,
-//                           bool collagenDisease, const QString& typeOfDisease);
-
-   /* if(createTable("RiskFactors",
-                   "id INTEGER UNIQUE PRIMARY KEY, "
-                   "card_id INTEGER UNSIGNED, "
-                   "occupation_id TINYINT UNSIGNED,"
-                   "sporting_activities_id TINYINT UNSIGNED, "
-                   "smoking_history_id TINYINT UNSIGNED, "
-                   "cigs_per_day TINYINT UNSIGNED, "
-                   "years_of_smoking TINYINT UNSIGNED, "
-                   "diabetes_I BOOLEAN, "
-                   "diabetes_II BOOLEAN, "
-                   "hobl BOOLEAN, "
-                   "hypertension BOOLEAN, "
-                   "heart_disease BOOLEAN, "
-                   "kidney_disease BOOLEAN, "
-                   "gastritis BOOLEAN, "
-                   "aortic_aneurysm BOOLEAN, "
-                   "immunosuppression BOOLEAN, "
-                   "coagulopathy BOOLEAN, "
-                   "platelet_aggregation_inhibitors BOOLEAN, "
-                   "other_factors VARCHAR(300)"
-                   ))*/
 
     Q_INVOKABLE bool insertRiskFactors(int cardId, int occupationId, int sportActivitiesId, int smokingHistoryId,
                            const QString& cigsPerDay, const QString& yearsOfSmoking,
                            bool diabetesI, bool diabetesII, bool hobl, bool hypertension,
-                           bool heartDisease, bool kidneyDisease, bool gastritis, bool aorticAneurysm,
+                           bool heartDisease, bool kidneyDisease, bool gastritis, bool ulcer, bool aorticAneurysm,
                            bool immunosuppression, bool coagulopathy, bool plateletAggregationInhibitors,
                            const QString& otherFactors);
 
@@ -359,8 +327,9 @@ public:
 
 
     Q_INVOKABLE bool insertEarlyPostOperativePain(int herniaId, int daysAfterOperation, int painInRest, int painInMotion,
-                                                  bool analgesics, const QString& daysOfMedication,
-                                                  bool orally, bool injections);
+                                                  bool analgesics, const QString& analgesicsDays,
+                                                  bool orally, const QString& orallyDays,
+                                                  bool injections, const QString& injectionsDays);
 
     Q_INVOKABLE bool insertHerniaImages(int herniaId, const QStringList& sources, const QStringList& descriptions);
 
@@ -400,7 +369,7 @@ public:
     Q_INVOKABLE bool updateRiskFactors(int cardId, int occupationId, int sportActivitiesId, int smokingHistoryId,
                            const QString& cigsPerDay, const QString& yearsOfSmoking,
                            bool diabetesI, bool diabetesII, bool hobl, bool hypertension,
-                           bool heartDisease, bool kidneyDisease, bool gastritis, bool aorticAneurysm,
+                           bool heartDisease, bool kidneyDisease, bool gastritis, bool ulcer, bool aorticAneurysm,
                            bool immunosuppression, bool coagulopathy, bool plateletAggregationInhibitors,
                            const QString& otherFactors);
 
@@ -412,6 +381,16 @@ public:
 
     Q_INVOKABLE QList<QObject*> regionsDistribution(const QList<int>& cardIDs);
     Q_INVOKABLE QList<QObject*> sexDistribution(const QList<int>& cardIDs);
+    Q_INVOKABLE QList<QObject*> operationMethodsDistribution(const QList<int>& cardIDs);
+    Q_INVOKABLE QList<QObject*> tensionOperationsDistribution(const QList<int>& cardIDs);
+    Q_INVOKABLE QList<QObject*> nonTensionOperationsDistribution(const QList<int>& cardIDs);
+    Q_INVOKABLE QList<QObject*> meshesDistribution(const QList<int>& cardIDs);
+    Q_INVOKABLE QList<QObject*> fixationDistribution(const QList<int>& cardIDs);
+    Q_INVOKABLE QList<QObject*> tuckersDistribution(const QList<int>& cardIDs);
+    Q_INVOKABLE QList<QObject*> complicationsDistribution(const QList<int>& cardIDs);
+
+    // --------------------------------
+    Q_INVOKABLE void addMeshToLastAdded(int userId, const QString &mesh);
 
 
 private:

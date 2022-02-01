@@ -45,15 +45,18 @@ void TreeViewModel::initModel(DBWorker &dbWorker)
      *    (с учетом разворачиваемых элементов)
     */
 
-
+     // ********************************** Раздел "Пол" ******************************************
      QObject *sex = new TreeElement("Пол", this);
         QObject *male = new TreeElement("Мужской", sex);
         QObject *female = new TreeElement("Женский", sex);
+
+        // ********************************** Раздел "Регион" ******************************************
      QObject *region = new TreeElement("Регион", this);
      QList<QObject*> regionsList;
      for(auto reg: dbWorker.regions())
          regionsList.push_back(new TreeElement(reg, region));
 
+     // ********************************** Раздел "Факторы риска" ************************************
      QObject *riskFactors = new TreeElement("Факторы риска", this);
      QObject *occupation = new TreeElement("Род деятельности", riskFactors);
      QList<QObject*> occupationsList;
@@ -70,7 +73,7 @@ void TreeViewModel::initModel(DBWorker &dbWorker)
      QObject *otherFactors = new TreeElement("Другие факторы", riskFactors);
      QStringList otherFactorsStringList = {"Сахарный диабет I типа", "Сахарный диабет II типа",
                                            "ХОБЛ", "Гипертония", "Сердечное заболевание",
-                                           "Заболевание почек", "Гастрит / пептическая язва",
+                                           "Заболевание почек", "Гастрит",  "Пептическая язва",
                                            "Аневризмы аорты", "Иммуносупрессия", "Коагулопатия",
                                            "Ингибиторы агрегации тромбоцитов"};
      QList<QObject*> otherFactorsList;
@@ -78,7 +81,7 @@ void TreeViewModel::initModel(DBWorker &dbWorker)
          otherFactorsList.push_back(new TreeElement(oth, otherFactors));
 
 
-     // Грыжа
+     // ********************************** Раздел "Грыжа" ******************************************
      QObject *hernia = new TreeElement("Грыжа", this);
 
      // Послеоперационная вентральная грыжа
@@ -111,6 +114,55 @@ void TreeViewModel::initModel(DBWorker &dbWorker)
      QObject* recurrence = new TreeElement("Рецидив", hernia);
      // \ Рецидив
      // \Грыжа
+
+     // ********************************** Раздел "Операции" ******************************************
+
+     QObject *operations = new TreeElement("Операции", this);
+     QObject *tensionMethod = new TreeElement("Натяжной способ", operations);
+
+     QObject *tensionTechnique = new TreeElement("Техника натяжного способа", tensionMethod);
+
+     QList<QObject*> tensionTechniquesList;
+     for(auto tech: dbWorker.tissueRepairTechniques())
+         tensionTechniquesList.push_back(new TreeElement(tech, tensionTechnique));
+
+
+     // все, что относится к ненатяжному способу
+     QObject *nonTensionMethod = new TreeElement("Ненатяжной способ", operations);
+
+     QObject *nonTensionTechnique = new TreeElement("Техника ненатяжного способа", nonTensionMethod);
+     QList<QObject*> nonTensionTechniquesList;
+     for(auto tech: dbWorker.meshImplantRepairTechniques())
+         nonTensionTechniquesList.push_back(new TreeElement(tech, nonTensionTechnique));
+
+     QObject *meshType = new TreeElement("Тип сетки", nonTensionMethod);
+     QList<QObject*> meshesList;
+     for(auto mesh: dbWorker.meshes())
+        meshesList.push_back(new TreeElement(mesh, meshType));
+
+     QObject *fixationType = new TreeElement("Тип фиксации", nonTensionMethod);
+     QList<QObject*> fixationsList;
+     fixationsList.push_back(new TreeElement("Сетка не фиксировалась", fixationType));
+     for(auto fix: dbWorker.fixationTypes())
+         fixationsList.push_back(new TreeElement(fix, fixationType));
+
+     QObject *tuckersType = new TreeElement("Тип такеров", nonTensionMethod);
+     QList<QObject*> tuckersList;
+     for(auto tucker: dbWorker.tuckers())
+         tuckersList.push_back(new TreeElement(tucker, tuckersType));
+     // ----------------------------------------------------
+
+     QObject *complications = new TreeElement("Осложнения", operations);
+
+     QList<QObject*> complicationsList;
+     complicationsList.push_back(new TreeElement("Интраоперационные", complications));
+     complicationsList.push_back(new TreeElement("Ранние послеоперационные", complications));
+     complicationsList.push_back(new TreeElement("Поздние послеоперационные", complications));
+
+
+
+
+
 
 
 
@@ -146,6 +198,23 @@ void TreeViewModel::initModel(DBWorker &dbWorker)
         this->m_data.push_back(herniaSide);
             this->m_data.append(herniaSideList);
         this->m_data.push_back(recurrence);
+
+     this->m_data.push_back(operations);
+     this->m_data.push_back(tensionMethod);
+     this->m_data.push_back(tensionTechnique);
+     this->m_data.append(tensionTechniquesList);
+     this->m_data.push_back(nonTensionMethod);
+     this->m_data.push_back(nonTensionTechnique);
+     this->m_data.append(nonTensionTechniquesList);
+     this->m_data.push_back(meshType);
+     this->m_data.append(meshesList);
+     this->m_data.push_back(fixationType);
+     this->m_data.append(fixationsList);
+     this->m_data.push_back(tuckersType);
+     this->m_data.append(tuckersList);
+
+     this->m_data.push_back(complications);
+     this->m_data.append(complicationsList);
 
 
 

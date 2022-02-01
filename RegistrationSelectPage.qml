@@ -58,7 +58,6 @@ Page{
             color: Properties.buttonColor;
             hoverColor: Properties.buttonHoverColor;
             font.pixelSize: Properties.buttonFontPixelSize;
-            rectangle.radius: height / 2
 
         }
         CustomButton{
@@ -77,7 +76,6 @@ Page{
             color: Properties.buttonColor;
             hoverColor: Properties.buttonHoverColor;
             font.pixelSize: Properties.buttonFontPixelSize;
-            rectangle.radius: height / 2
 
         }
 

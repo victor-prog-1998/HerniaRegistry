@@ -19,13 +19,19 @@ bool MyFunctions::checkLetterString(const QString &str)
 bool MyFunctions::checkPrintableString(const QString &str, bool lineFeed)
 {
     if(!lineFeed)
+    {
         for(auto ch: str)
+        {
             if(!ch.isPrint())
                 return false;
+        }
+    }
     else        // когда перевод строки разрешен
+    {
         for(auto ch:str)
             if((!ch.isPrint()) && (ch != '\n'))
                 return false;
+    }
     return true;
 }
 
@@ -162,8 +168,6 @@ bool MyFunctions::checkPatientCardFields(const QString &cardNumber,
         const QString &snils,
         const QString &polisType,
         const QString &polisNumber,
-        const QString &bloodType,
-        const QString &rhesusFactor,
         const QString &weight,
         const QString &height,
         const QString &complaints)
@@ -198,10 +202,13 @@ bool MyFunctions::checkPatientCardFields(const QString &cardNumber,
         emptyFields += "\nТип полиса";
     if(polisNumber.isEmpty())
         emptyFields += "\nНомер полиса";
-    if(bloodType.isEmpty())
-        emptyFields += "\nГруппа крови";
-    if(rhesusFactor.isEmpty())
-        emptyFields += "\nРезус-фактор";
+
+//    if(bloodType.isEmpty())
+//        emptyFields += "\nГруппа крови";
+
+    //    if(rhesusFactor.isEmpty())
+    //        emptyFields += "\nРезус-фактор";
+
     if(weight.isEmpty())
         emptyFields += "\nВес";
     if(height.isEmpty())

@@ -57,7 +57,6 @@ Page{
 
             selectByMouse: true
             placeholderText: "Введите логин"
-            rectangle.radius: height / 2
             horizontalAlignment: TextInput.AlignHCenter
         }
         CustomTextField{
@@ -74,7 +73,6 @@ Page{
 
             selectByMouse: true
             placeholderText: "Введите пароль"
-            rectangle.radius: height / 2
             echoMode: TextField.Password
             horizontalAlignment: TextInput.AlignHCenter
         }
@@ -95,7 +93,6 @@ Page{
             color: Properties.buttonColor;
             hoverColor: Properties.buttonHoverColor;
             font.pixelSize: Properties.buttonFontPixelSize;
-            rectangle.radius: height / 2
         }
         CustomButton{
             text: "Регистрация"
@@ -109,9 +106,8 @@ Page{
             Layout.maximumHeight: 70
             Layout.fillHeight: true
 
-            color: "#e0e0e0";
-            hoverColor: "#c2c2c2"
-            rectangle.radius: height / 2
+            color: "#e3e03d"
+            hoverColor: "#c9c72c"
             font.pixelSize: Properties.buttonFontPixelSize
         }
     }

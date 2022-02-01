@@ -12,7 +12,7 @@ Page{
 
     signal closeCardClicked()
     signal editMainInfoClicked(var cardId);
-    signal addHerniaClicked(var cardId)
+    signal addHerniaClicked(var cardId, var userId)
 
     function updateMainInfo()
     {
@@ -93,7 +93,7 @@ Page{
             userId: root.userId
             cardId: root.cardId
             editIsAvailable: root.editIsAvailable
-            onAddHerniaClicked: root.addHerniaClicked(root.cardId)
+            onAddHerniaClicked: root.addHerniaClicked(root.cardId, root.userId)
         }
 
 

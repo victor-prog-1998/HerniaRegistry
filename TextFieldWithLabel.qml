@@ -50,6 +50,5 @@ ColumnLayout{
 //        Layout.fillHeight: true
 //        Layout.minimumHeight: 30
 //        Layout.maximumHeight: 70
-        rectangle.radius: height / 2
     }
 }

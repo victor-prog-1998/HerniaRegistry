@@ -35,19 +35,22 @@ Window {
         stackView.push(statisticsPage)
     }
 
-    function openViewHerniaPage(herniaId, editIsAvailable, cardId)
+    function openViewHerniaPage(herniaId, editIsAvailable, cardId, userId)
     {
         viewHerniaPage.herniaId = herniaId
         viewHerniaPage.editIsAvailable = editIsAvailable
         viewHerniaPage.cardId = cardId;
+        viewHerniaPage.userId = userId;
         stackView.push(viewHerniaPage)
     }
 
-    function openEditHerniaPage(herniaId, cardId)
+    function openEditHerniaPage(herniaId, cardId, userId)
     {
         herniaPage.editHerniaId = herniaId;
         herniaPage.cardId = cardId;
+        herniaPage.userId = userId;
         herniaPage.editMode = true;
+        herniaPage.meshChanged = false;
         herniaPage.setOldInfo();
         stackView.push(herniaPage);
 
@@ -238,6 +241,7 @@ Window {
         }
         onAddHerniaClicked: {
             herniaPage.cardId = cardId;
+            herniaPage.userId = userId;
             stackView.push(herniaPage);
         }
     }

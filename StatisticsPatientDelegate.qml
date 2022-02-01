@@ -2,7 +2,7 @@ import QtQuick 2.0
 
 
 Rectangle{
-    radius: 10
+    radius: 5
     height: 70
     color: "white"
 

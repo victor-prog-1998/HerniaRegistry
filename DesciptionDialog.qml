@@ -87,7 +87,6 @@ Dialog{
                 Layout.minimumWidth: 300
                 Layout.maximumWidth: 400
                 Layout.alignment: Qt.AlignHCenter
-                rectangle.radius:  20
             }
 
             Row{
@@ -98,7 +97,6 @@ Dialog{
                     color: Properties.buttonColor;
                     hoverColor: Properties.buttonHoverColor;
                     font.pixelSize: Properties.buttonFontPixelSize;
-                    rectangle.radius: height / 2
                     rectangle.implicitHeight: 40
                     rectangle.implicitWidth: 100
                     onClicked: {
@@ -110,7 +108,6 @@ Dialog{
                     color: Properties.buttonColor;
                     hoverColor: Properties.buttonHoverColor;
                     font.pixelSize: Properties.buttonFontPixelSize;
-                    rectangle.radius: height / 2
                     rectangle.implicitHeight: 40
                     rectangle.implicitWidth: 100
                     onClicked: {

@@ -37,7 +37,6 @@ Item {
                 color: Properties.buttonColor;
                 hoverColor: Properties.buttonHoverColor;
                 font.pixelSize: Properties.buttonFontPixelSize;
-                rectangle.radius: height / 2
                 onClicked: root.show()
             }
 

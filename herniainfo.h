@@ -63,10 +63,14 @@ class HerniaInfo : public QObject
     Q_PROPERTY(QList<int> earlyInRestPainDegree READ earlyInRestPainDegree NOTIFY propertyChanged)
     Q_PROPERTY(QList<bool> earlyInMotionPain READ earlyInMotionPain NOTIFY propertyChanged)
     Q_PROPERTY(QList<int> earlyInMotionPainDegree READ earlyInMotionPainDegree NOTIFY propertyChanged)
+
     Q_PROPERTY(QList<bool> earlyPainAnalgesics READ earlyPainAnalgesics NOTIFY propertyChanged)
     Q_PROPERTY(QList<int> earlyPainAnalgesicsDays READ earlyPainAnalgesicsDays NOTIFY propertyChanged)
     Q_PROPERTY(QList<bool> earlyPainAnalgesicsOrally READ earlyPainAnalgesicsOrally NOTIFY propertyChanged)
+    Q_PROPERTY(QList<int> earlyPainAnalgesicsOrallyDays READ earlyPainAnalgesicsOrallyDays NOTIFY propertyChanged)
     Q_PROPERTY(QList<bool> earlyPainAnalgesicsInjections READ earlyPainAnalgesicsInjections NOTIFY propertyChanged)
+    Q_PROPERTY(QList<int> earlyPainAnalgesicsInjectionsDays READ earlyPainAnalgesicsInjectionsDays NOTIFY propertyChanged)
+
     Q_PROPERTY(bool nerveInjury READ nerveInjury NOTIFY propertyChanged)
     Q_PROPERTY(bool chronicPainInRest READ chronicPainInRest NOTIFY propertyChanged)
     Q_PROPERTY(int chronicPainInRestDegree READ chronicPainInRestDegree NOTIFY propertyChanged)
@@ -101,8 +105,12 @@ public:
 
     void setEarlyPainInfo(const QList<bool>& inRest, const QList<int>& inRestDegree,
                       const QList<bool>& inMotion, const QList<int>& inMotionDegree,
-                      const QList<bool>& analgesics, const QList<int>& analgesicsDays,
-                      const QList<bool>& analgesicsOrally, const QList<bool>& analgesicsInjections);
+                      const QList<bool>& analgesics,
+                      const QList<int>& analgesicsDays,
+                      const QList<bool>& analgesicsOrally,
+                      const QList<int>& orallyDays,
+                      const QList<bool>& analgesicsInjections,
+                      const QList<int>& injectionsDays);
 
     void setChronicInRestPainInfo(int degree);
     void setChronicInMotionPainInfo(int degree);
@@ -175,7 +183,9 @@ public:
     const QList<bool>& earlyPainAnalgesics() const;
     const QList<int>& earlyPainAnalgesicsDays() const;
     const QList<bool>& earlyPainAnalgesicsOrally() const;
+    const QList<int>& earlyPainAnalgesicsInjectionsDays() const;
     const QList<bool>& earlyPainAnalgesicsInjections() const;
+    const QList<int>& earlyPainAnalgesicsOrallyDays() const;
 
 
     bool nerveInjury() const;
@@ -268,7 +278,9 @@ private:
     QList<bool> m_earlyPainAnalgesics;
     QList<int> m_earlyPainAnalgesicsDays;
     QList<bool> m_earlyPainAnalgesicsOrally;
+    QList<int> m_earlyPainAnalgesicsInjectionsDays;
     QList<bool> m_earlyPainAnalgesicsInjections;
+    QList<int> m_earlyPainAnalgesicsOrallyDays;
 
 
     bool m_nerveInjury;

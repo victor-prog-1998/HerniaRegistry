@@ -2,7 +2,7 @@ import QtQuick 2.0
 
 Rectangle{
     radius: 10
-    height: 100
+    height: 125
     color: "white"
 
     signal openClicked(var cardId)
@@ -11,7 +11,7 @@ Rectangle{
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.margins: 10
-        spacing: 10
+        spacing: 8
 
         Text{
             anchors.left: parent.left
@@ -48,6 +48,20 @@ Rectangle{
             }
         }
 
+        Row{
+            spacing: 10
+            Text{
+                text: "Регион:"
+                color: "navy"
+                font.pixelSize: 16
+                font.bold: true
+            }
+            Text{
+                text: modelData.region
+                font.pixelSize: 16
+            }
+        }
+
     }
 
     CustomButton{
@@ -58,7 +72,6 @@ Rectangle{
         text: "Открыть"
         height: 30
         width: 100
-        rectangle.radius: 5
         color: "#1eff00"
         hoverColor: "#19d600"
         visible: modelData.viewIsAvailable

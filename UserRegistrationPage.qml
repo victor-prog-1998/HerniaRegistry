@@ -268,7 +268,6 @@ Page{
                     color: Properties.buttonColor;
                     hoverColor: Properties.buttonHoverColor;
                     font.pixelSize: Properties.buttonFontPixelSize;
-                    rectangle.radius: height / 2
                     enabled: root.formIsReady();
                     onClicked: {
                         if(root.checkFields())
